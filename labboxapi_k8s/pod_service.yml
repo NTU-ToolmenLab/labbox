@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: user
+  name: hostname
+spec:
+  selector:
+    srvname: hostname
+  ports:
+  - port: 8000
+    targetPort: 8000

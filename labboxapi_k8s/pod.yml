@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test
+  namespace: user
+  labels:
+    labbox-user: "true"
+    srvname: "test"
+spec:
+  initContainers:
+  - name: add-files-to-home
+    image: busybox
+    command: ["sh", "-c", "chown 1000:1000 /home/ubuntu && chmod 700 /home/ubuntu && tar xf /all.tar -C /home/ubuntu"]
+    volumeMounts:
+    - name: homenas
+      mountPath: /all.tar
+      subPath: server/LabDockerFile/all.tar
+      readOnly: true
+    # - name: homenas
+    #   mountPath: /home/ubuntu
+    #   subPath: guest
+  restartPolicy: Never
+  containers:
+  - name: main
+    image: nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
+    imagePullPolicy: IfNotPresent
+    # command: [tail]
+    # args: ["-f", "/dev/null"]
+    ports:
+    - containerPort: 22
+    - containerPort: 5900
+    - containerPort: 8000
+    volumeMounts:
+    # - name: labnas
+    #   mountPath: /home/nas
+    # - name: homenas
+    #   mountPath: /home/ubuntu
+    #   subPath: guest
+    - name: homenas
+      mountPath: /home/share
+      subPath: share
+    - name: dshm
+      mountPath: /dev/shm
+    - name: tmp
+      mountPath: /home/tmp
+    env:
+    - name: node
+      value: lab304-server2
+    resources:
+      requests:
+        memory: "1Mi"
+      limits:
+        memory: "20Gi"
+
+
+  nodeSelector:
+    kubernetes.io/hostname: lab304-server2
+  volumes:
+  #- name: labnas
+  #  persistentVolumeClaim:
+  #    claimName: nfs-labnas
+  #- name: homenas
+  #  persistentVolumeClaim:
+  #    claimName: nfs-homenas
+  - name: dshm
+    emptyDir:
+      medium: Memory
+  - name: tmp
+    emptyDir: {}

@@ -1,0 +1,27 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand"> {{ current_user.name }} </a>
+  <ul class="navbar-nav mr-auto">
+    <li class="nav-item">
+      <a class="nav-link" href="/box/">Box</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="/box/queue">Queue</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="/monitor/">Monitor</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="/drive/">Drive</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="/help">Help</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="/passwd">Change Password</a>
+    </li>
+  </ul>
+  <form class="form-inline">
+    <a href="{{ url_for('labboxmain.routes.Logout')}}" class="btn btn-primary btn-md"/>logout</a>
+  </form>
+</nav>
+

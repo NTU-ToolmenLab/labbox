@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Admin
+{% endblock %}
+
+{% block head %}
+  <style>
+.mytable {
+    table-layout: fixed;
+    word-wrap: break-word;
+}
+  </style>
+{% endblock %}
+
+{% block body %}
+      {% for table in tables %}
+      <h2>{{table.name}}</h2>
+      <div class="table-responsive">
+       <table class="table mytable">
+          <thead>
+            <tr>
+              {% for head in table.table[0].keys() %}
+              <th scope="col">{{head}}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for body in table.table %}
+            <tr>
+              <form action="{{ url_for('labboxmain.routes.AdminPage') }}" method="post">
+              {% for ind, data in dict(body).items() %}
+              <th>{{data}}</th>
+              <input  type="hidden" value="{{data}}" name="{{ind}}"/>
+              {% endfor %}
+              <th>
+                  <input  type="submit" value="Delete"
+                          class="btn btn-outline-danger"/>
+                  <input  type="hidden" value="{{table.name}}" name="table"/>
+                  <input  type="hidden" value="delete" name="method"/>
+              </th>
+              </form>
+            </tr>
+            {% endfor %}
+            <tr>
+              <form action="{{ url_for('labboxmain.routes.AdminPage') }}" method="post">
+              {% for key in table.table[0].keys() %}
+              <th>
+                  <input  type="text" value="" name="{{key}}"/>
+              </th>
+              {% endfor %}
+              <th>
+                  <input  type="submit" value="Add"
+                          class="btn btn-outline-primary"/>
+                  <input  type="hidden" value="{{table.name}}" name="table"/>
+                  <input  type="hidden" value="add" name="method"/>
+              </th>
+              </form>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      {% endfor %}
+{% endblock %}

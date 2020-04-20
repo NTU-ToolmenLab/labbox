@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}
+list
+{% endblock %}
+
+{% block body %}
+{% include 'nav.html' %}
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-7">
+        <!--div class="alert alert-success" role="alert">
+          <h3> Bulletin Board </h3>
+          <br>
+          {{ config.bullet|safe }}
+        </div-->
+
+        {% for data in container_list %}
+          <div class="card my-3">
+            <div class="card-header"> {{ data.name }} </div>
+            <div class="card-body">
+              <h5 class="card-title"> status: {{ data.status }} </h5>
+              <p class="card-text"> {{ data.text }} </p>
+              <p class="card-text"> image: {{ data.image }} </p>
+              {% if data.parent %}
+              <p class="card-text"> parent: {{ data.parent}} </p>
+              {% endif %}
+              <p class="card-text"> create time: {{ data.date }} </p>
+              <p class="card-text"> backup time: {{ data.commit }} </p>
+
+              <form action="{{ url_for('labboxmain.box_models.api')}}" method="post">
+                <input type="hidden"   name="name"     value="{{data.realname}}"/>
+                <div class="btn-group" role="group">
+                  <input type="submit" name="method" value="Desktop" class="btn btn-outline-primary"/>
+                  <input type="submit" name="method" value="Jupyter" class="btn btn-outline-primary"/>
+                  <input type="submit" name="method" value="Restart" class="btn btn-outline-warning"/>
+                  <input type="submit" name="method" value="Stop"    class="btn btn-outline-warning"/>
+                  <input type="submit" name="method" value="Delete"  class="btn btn-outline-danger" />
+                  <input type="submit" name="method" value="Rescue"  class="btn btn-outline-danger" />
+                  {% if data.parent %}
+                    <input type="submit" name="method" value="Sync"  class="btn btn-outline-danger" />
+                  {% endif %}
+                </div>
+              </form>
+
+              <form action="{{ url_for('labboxmain.box_models.api')}}" method="post">
+                <input type="hidden"   name="name"     value="{{data.realname}}"/>
+                <input type="hidden"   name="method"     value="node"/>
+                <div class="form-group mt-2 mb-2">
+                  <label for="node">Choose Server:</label>
+                  <select class="col-6" name="node" onchange="this.form.submit()">
+                  {% for node in create_param.node %}
+                    <option {{ "selected" if data.node == node }}> {{node}} </option>
+                  {% endfor %}
+                  </select>
+                </div>
+              </form>
+
+            </div>
+            <div class="card-footer text-muted"> {{ data.realname }} </div>
+          </div>
+        {% endfor %}
+        {% if create_param.quota - create_param.use_quota > 0 %}
+          <form action="{{ url_for('labboxmain.box_models.create')}}" method="post">
+            <div class="card my-3">
+              <div class="card-header"> Create New Environment {{create_param.use_quota + 1}}/{{create_param.quota}} </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label for="name">Name (optional) (No UPPERCASE allow)</label>
+                  <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text">{{ current_user.name + '_'}}</span>
+                    </div>
+                    <input type="text" class="form-control" name="name">
+                  </div>
+                  <label for="image">Choose Environment</label>
+                  <select class="form-control" name="image">
+                  {% for image in create_param.image %}
+                    <option> {{image}} </option>
+                  {% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="node">Choose Server</label>
+                  <select class="form-control" name="node">
+                  {% for node in create_param.node %}
+                    <option> {{node}} </option>
+                  {% endfor %}
+                  </select>
+                </div>
+                <div class="btn-group" role="group">
+                  <input type="submit" value="Create" class="btn btn-outline-primary"/>
+                </div>
+              </div>
+            </div>
+          </form>
+        {% endif %}
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Environment</th>
+              <th scope="col">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for image in image_list %}
+              <tr>
+                <td>{{ image.name }}</td>
+                <td>{{ image.description }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+      </div>
+    </div>
+  </div>
+{% endblock %}

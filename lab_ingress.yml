@@ -1,0 +1,30 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: vnc
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.frontend.rule.type: PathPrefixStrip
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /vnc/
+        backend:
+          serviceName: novnc
+          servicePort: 6080
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: labboxmain
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        backend:
+          serviceName: labboxmain
+          servicePort: 5000

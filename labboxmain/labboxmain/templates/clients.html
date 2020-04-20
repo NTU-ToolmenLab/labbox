@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Clients
+{% endblock %}
+
+{% block body %}
+
+<table>
+{% for client in clients %}
+  <tr>
+    <td>
+      <form action="" method="post">
+        <input type="hidden" name="delete_client_id" value={{client.client_id}}>
+        <button type="submit" class="btn btn-danger">Delete</button>
+      </form>
+    </td>
+    <td>
+      <pre>{{ client.client_info|tojson }}
+{{ client.client_metadata|tojson }}</pre>
+    </td>
+  </tr>
+{% endfor %}
+</table>
+<hr>
+
+<form action="" method="post">
+  <div class="input-group mb-3">
+    <div class="input-group-prepend">
+      <span class="input-group-text">Client Name</span>
+    </div>
+    <input type="text" class="form-control" name="client_name" placeholder="client_name">
+
+    <div class="input-group-prepend">
+      <span class="input-group-text">Client URI</span>
+    </div>
+    <input type="text" class="form-control" name="client_uri" placeholder="client_uri" value='http://127.0.0.1:5001'>
+
+    <div class="input-group-prepend">
+      <span class="input-group-text">Allowed Scope</span>
+    </div>
+    <input type="text" class="form-control" name="scope" placeholder="scope">
+  </div>
+
+  <div class="input-group mb-3">
+    <div class="input-group-prepend">
+      <span class="input-group-text">Redirect URIs</span>
+    </div>
+    <textarea class="form-control" name="redirect_uri">http://127.0.0.1:5001/oauthorized</textarea>
+
+    <div class="input-group-prepend">
+      <span class="input-group-text">Token Endpoint Auth Method</span>
+    </div>
+    <select name="token_endpoint_auth_method">
+      <option value="client_secret_post" selected="selected">client_secret_post</option>
+      <option value="client_secret_basic">client_secret_basic</option>
+    </select>
+  </div>
+
+  <div class="input-group mb-3">
+    <div class="input-group-prepend">
+      <span class="input-group-text">Allowed Grant Types</span>
+    </div>
+    <textarea class="form-control" name="grant_type">authorization_code</textarea>
+
+    <div class="input-group-prepend">
+      <span class="input-group-text">Allowed Response Types</span>
+    </div>
+    <textarea class="form-control" name="response_type">code</textarea>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+{% endblock %}
