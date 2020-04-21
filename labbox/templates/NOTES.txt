@@ -1,0 +1,10 @@
+1. Get the application URL by running these commands:
+{{- $name := include "labbox.vncname" . -}}
+{{- if .Values.vnc.enabled }}
+VNC is enable at
+{{- range $host := .Values.vnc.hosts }}
+  {{- range .paths }}
+  http://{{ default $host.host $name }}{{ . }}
+  {{- end }}
+{{- end }}
+{{- end }}

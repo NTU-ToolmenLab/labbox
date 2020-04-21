@@ -1,0 +1,30 @@
+{{- if .Values.vnc.enabled -}}
+{{- $name := include "labbox.vncname" . -}}
+{{- if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1beta1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "labbox.labels" . | nindent 4 }}
+  {{- with .Values.vnc.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  rules:
+  {{- range .Values.vnc.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+        {{- range .paths }}
+          - path: {{ . }}
+            backend:
+              serviceName: {{ $name }}
+              servicePort: 6080
+        {{- end }}
+  {{- end }}
+{{- end }}

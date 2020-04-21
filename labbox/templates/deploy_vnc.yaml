@@ -1,0 +1,75 @@
+{{- if .Values.vnc.enabled -}}
+{{- $name := include "labbox.vncname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "labbox.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.vnc.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "labbox.selectorLabels" . | nindent 6 }}
+      name: {{ $name }}
+  template:
+    metadata:
+      labels:
+        {{- include "labbox.selectorLabels" . | nindent 8 }}
+        name: {{ $name }}
+    spec:
+    {{- with .Values.vnc.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ $name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.vnc.image.repository }}:{{ .Values.vnc.image.tag }}"
+          imagePullPolicy: {{ .Values.vnc.image.pullPolicy }}
+          ports:
+            - containerPort: 6080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 6080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 6080
+          volumeMounts:
+          {{- if .Values.vnc.persistentVolumeClaim }}
+          {{- with .Values.vnc.sourceSubpath }}
+          - name: volume
+            mountPath: /app
+            subPath: {{ . }}
+          {{- end }}
+          {{- with .Values.vnc.dataSubpath }}
+          - name: volume
+            mountPath: /data/db.sqlite
+            subPath: {{ . }}
+          {{- end }}
+          {{- end }}
+      volumes:
+      {{- with .Values.vnc.persistentVolumeClaim }}
+      - name: volume
+        persistentVolumeClaim:
+          claimName: {{ . }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+{{- end }}

@@ -1,0 +1,16 @@
+{{- if .Values.vnc.enabled -}}
+{{- $name := include "labbox.vncname" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "labbox.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "labbox.selectorLabels" . | nindent 4 }}
+    name: {{ $name }}
+  ports:
+  - port: 6080
+    targetPort: 6080
+{{- end }}
