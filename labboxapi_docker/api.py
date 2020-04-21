@@ -104,6 +104,14 @@ def parseContainer(cont):
     }
 
 
+@app.route("/")
+def hello():
+    """
+    Hello
+    """
+    return Ok()
+
+
 @app.route("/search", methods=["POST"])
 def search():
     """

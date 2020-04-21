@@ -1,21 +1,68 @@
 vnc:
+  # VNC interface
   enabled: false
+
+  # I use traefik as reverse proxy with path /vnc/
   annotations:
     kubernetes.io/ingress.class: traefik
     traefik.frontend.rule.type: PathPrefixStrip
   hosts:
     - host: null
       paths: [/vnc/]
-  pullPolicy: IfNotPresent
+
+  # Docker file should built by `build_docker.sh`
   image:
     repository: linnil1/novnc
     tag: latest
     pullPolicy: IfNotPresent
+
+  # Number of instances
   replicaCount: 1
 
+  # set where to put your data
   persistentVolumeClaim: nfs-labserver
-  sourceSubpath: novnc
   dataSubpath: data/db.sqlite
+
+  # Set to null if you don't want to modify the script
+  sourceSubpath: novnc
+
+docker:
+  # API script for controlling docker(daemonset)
+
+  # Docker file should built by `build_docker.sh`
+  image:
+    repository: linnil1/labboxapi-docker
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  # Set to null if you don't want to modify the script
+  persistentVolumeClaim: nfs-labserver
+  subpath: labboxapi_docker
+
+
+k8s:
+  # API script for controlling k8s
+  # It will create rbac by default
+
+  # Number of instances
+  replicaCount: 1
+
+  # Docker file should built by `build_docker.sh`
+  image:
+    pullPolicy: IfNotPresent
+    repository: linnil1/labboxapi-k8s
+    tag: latest
+
+  # Set to null if you don't want to modify the script
+  persistentVolumeClaim: nfs-labserver
+  subpath: labboxapi_k8s
+
+  # The template of user's instance
+  template_subpath: labboxapi_k8s/template
+
+  # Namespace and label of user's instance
+  namespace: 'user1'
+  user_label: "labbox-user1"
 
 
 imagePullSecrets: []

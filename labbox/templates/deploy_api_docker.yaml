@@ -1,13 +1,11 @@
-{{- if .Values.vnc.enabled -}}
-{{- $name := include "labbox.vncname" . -}}
+{{- $name := include "labbox.api.docker" . -}}
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: {{ $name }}
   labels:
     {{- include "labbox.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.vnc.replicaCount }}
   selector:
     matchLabels:
       {{- include "labbox.selectorLabels" . | nindent 6 }}
@@ -18,7 +16,7 @@ spec:
         {{- include "labbox.selectorLabels" . | nindent 8 }}
         name: {{ $name }}
     spec:
-    {{- with .Values.vnc.imagePullSecrets }}
+    {{- with .Values.docker.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
@@ -28,48 +26,41 @@ spec:
         - name: {{ $name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.vnc.image.repository }}:{{ .Values.vnc.image.tag }}"
-          imagePullPolicy: {{ .Values.vnc.image.pullPolicy }}
+          image: "{{ .Values.docker.image.repository }}:{{ .Values.docker.image.tag }}"
+          imagePullPolicy: {{ .Values.docker.image.pullPolicy }}
           ports:
-            - containerPort: 6080
-              protocol: TCP
+          - containerPort: 3476
+            protocol: TCP
           livenessProbe:
             httpGet:
               path: /
-              port: 6080
+              port: 3476
           readinessProbe:
             httpGet:
               path: /
-              port: 6080
+              port: 3476
           volumeMounts:
-          {{- if .Values.vnc.persistentVolumeClaim }}
-          {{- with .Values.vnc.sourceSubpath }}
+          {{- if and .Values.docker.subpath .Values.docker.persistentVolumeClaim }}
           - name: volume
             mountPath: /app
-            subPath: {{ . }}
+            subPath: {{ .Values.docker.subpath }}
           {{- end }}
-          {{- with .Values.vnc.dataSubpath }}
-          - name: volume
-            mountPath: /data/db.sqlite
-            subPath: {{ . }}
-          {{- end }}
-          {{- end }}
+          - name: docker-sock
+            mountPath: /var/run/docker.sock
       volumes:
-      {{- with .Values.vnc.persistentVolumeClaim }}
+      - name: docker-sock
+        hostPath: 
+          path: /var/run/docker.sock
+      {{- with .Values.docker.persistentVolumeClaim }}
       - name: volume
         persistentVolumeClaim:
           claimName: {{ . }}
       {{- end }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
+    {{- with .Values.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
+    {{- end }}
+    {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
-      {{- end }}
-{{- end }}
+    {{- end }}
