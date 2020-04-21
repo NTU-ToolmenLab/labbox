@@ -2,6 +2,7 @@ from kubernetes import client, config
 from flask import Flask, jsonify, redirect, request, abort
 import yaml
 import re
+import os
 
 
 config.load_incluster_config()
@@ -9,8 +10,9 @@ v1 = client.CoreV1Api()
 v1beta = client.ExtensionsV1beta1Api()
 
 app = Flask(__name__)
-ns = "user"
-label = "labbox-user"
+label_dockerapi = "name=" + os.environ.get("DOCKERAPI_LABEL")
+ns = os.environ.get("USER_NAMESPACE") or "user"
+label = os.environ.get("USER_LABEL")
 
 
 @app.errorhandler(Exception)
@@ -79,12 +81,11 @@ def Ok(data={}):
 
 def listDockerServer():
     """List all available labboxapi_docker"""
-    allpods = v1.list_pod_for_all_namespaces(label_selector="app=labbox")
+    allpods = v1.list_pod_for_all_namespaces(label_selector=label_dockerapi)
     pods = []
     for pod in list(allpods.items):
         # check labboxapi-docker is alive
-        if pod.spec.containers[0].name != "labboxapi-docker" or \
-           pod.status.phase != "Running":
+        if pod.status.phase != "Running":
             continue
 
         # check node is alive
@@ -92,6 +93,8 @@ def listDockerServer():
         node_info = v1.list_node(label_selector="kubernetes.io/hostname=" + node).items
         if not node_info or not node_info[0].metadata.labels.get("labboxgroup"):
             continue
+
+        # Get group permission
         group = node_info[0].metadata.labels.get("labboxgroup")
         try:
             group = [int(g) for g in group.split("-")]
@@ -105,6 +108,12 @@ def listDockerServer():
     return pods
 
 
+@app.route("/")
+def hello():
+    """ Hello """
+    return Ok()
+
+
 @app.route("/search/node", methods=["POST"])
 def getDockerServer():
     """Return all available labboxapi_docker's node"""
@@ -115,7 +124,7 @@ def getPod(name):
     """Get pod by name."""
     try:
         pod = v1.read_namespaced_pod(name, ns)
-        if pod.metadata.labels[label] != 'true':
+        if label and pod.metadata.labels.get(label):
             abort(400, "Not in the same namespace")
         if pod.metadata.namespace != ns:
             abort(400, "Not in the same namespace")
@@ -195,7 +204,7 @@ def create():
 
     # fill the template
     app.logger.info("Create " + name)
-    template = yaml.load(open("/app/pod.yml"), Loader=yaml.FullLoader)
+    template = yaml.load(open("/app/template/pod.yml"), Loader=yaml.FullLoader)
     template['metadata']['name'] = name
     template['metadata']['labels']['srvname'] = name
     template['metadata']['namespace'] = ns
@@ -264,14 +273,14 @@ def create():
         return Ok()
 
     # ingress
-    template_ingress = yaml.load(open("/app/pod_ingress.yml"), Loader=yaml.FullLoader)
+    template_ingress = yaml.load(open("/app/template/pod_ingress.yml"), Loader=yaml.FullLoader)
     template_ingress['metadata']['name'] = name
     path = template_ingress['spec']['rules'][0]['http']['paths'][0]
     path['path'] = path['path'].replace("hostname", name)
     path['backend']['serviceName'] = name
 
     # service
-    template_service = yaml.load(open("/app/pod_service.yml"), Loader=yaml.FullLoader)
+    template_service = yaml.load(open("/app/template/pod_service.yml"), Loader=yaml.FullLoader)
     template_service['metadata']['name'] = name
     template_service['spec']['selector']['srvname'] = name
 

@@ -1,0 +1,74 @@
+{{- $name := include "labbox.api.k8s" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "labbox.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.k8s.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "labbox.selectorLabels" . | nindent 6 }}
+      name: {{ $name }}
+  template:
+    metadata:
+      labels:
+        {{- include "labbox.selectorLabels" . | nindent 8 }}
+        name: {{ $name }}
+    spec:
+      {{- with .Values.k8s.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      serviceAccountName: {{ $name }}
+      containers:
+        - name: {{ $name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.k8s.image.repository }}:{{ .Values.k8s.image.tag }}"
+          imagePullPolicy: {{ .Values.k8s.image.pullPolicy }}
+          ports:
+            - containerPort: 3476
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3476
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3476
+          env:
+          - name: USER_NAMESPACE
+            value: {{ .Values.k8s.namespace }}
+          - name: USER_LABEL
+            value: {{ .Values.k8s.user_label }}
+          - name: DOCKERAPI_LABEL
+            value: {{ include "labbox.api.docker" . }}
+          volumeMounts:
+          {{- if and .Values.k8s.subpath .Values.k8s.persistentVolumeClaim }}
+          - name: volume
+            mountPath: /app
+            subPath: {{ .Values.k8s.subpath }}
+          {{- end }}
+      volumes:
+      {{- with .Values.k8s.persistentVolumeClaim }}
+      - name: volume
+        persistentVolumeClaim:
+          claimName: {{ . }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
