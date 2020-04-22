@@ -164,24 +164,27 @@ def create():
     ----------
     name: str
         The pod name.
-    image: str
-        The base image you want to start.
-    pull: bool
-        Whether to pull the image automatically.(true/false)
-        Default: false
     homepath: str
         The path you want to mount "homepath" to /home/ubuntu.
     homepvc: str
         The PVC for homepath.
     naspvc: str
         The PVC mount to /home/nas.
+        Default: null
+    image: str
+        The base image you want to start.
+    pull: bool
+        Whether to pull the image automatically.(true/false)
+        Default: false
     command: str
         Commands to execute.
+        Default: null
     inittar: str
         To initialize pod environment by extracting tar file.
-        Default: server/ServerBox/all.tar
+        Default: all.tar
     gpu: str
         It will add NVIDIA_VISIBLE_DEVICES=gpu to pod environment.
+        Default: all
 
     Returns
     ----------
@@ -357,4 +360,4 @@ def goRedir(node, subpath):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3476, debug=True)
+    app.run(host="0.0.0.0", port=3476)  #, debug=True)

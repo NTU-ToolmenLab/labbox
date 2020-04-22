@@ -1,0 +1,63 @@
+{{- if .Values.sshpiper.enabled }}
+{{- $name := include "labbox.sshpiper" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "labbox.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.sshpiper.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "labbox.selectorLabels" . | nindent 6 }}
+      name: {{ $name }}
+  template:
+    metadata:
+      labels:
+        {{- include "labbox.selectorLabels" . | nindent 8 }}
+        name: {{ $name }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ $name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.sshpiper.image.repository }}:{{ .Values.sshpiper.image.tag }}"
+          imagePullPolicy: {{ .Values.sshpiper.image.pullPolicy }}
+          ports:
+            - containerPort: 2222
+              protocol: TCP
+          volumeMounts:
+          {{- if and .Values.sshpiper.persistentVolumeClaim .Values.sshpiper.subpath }}
+          - name: volume
+            mountPath: /var/sshpiper
+            subPath: {{ .Values.sshpiper.subpath }}
+          - name: volume
+            mountPath: /etc/ssh
+            subPath: {{ .Values.sshpiper.subpath }}
+          {{- end }}
+      volumes:
+      {{- with .Values.sshpiper.persistentVolumeClaim }}
+      - name: volume
+        persistentVolumeClaim:
+          claimName: {{ . }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

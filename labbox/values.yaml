@@ -1,6 +1,6 @@
 vnc:
   # VNC interface
-  enabled: false
+  enabled: true
 
   # I use traefik as reverse proxy with path /vnc/
   annotations:
@@ -25,6 +25,26 @@ vnc:
 
   # Set to null if you don't want to modify the script
   sourceSubpath: novnc
+
+
+sshpiper:
+  # sshpiper for instances
+  enabled: true
+  image:
+    repository: farmer1992/sshpiperd
+    tag: latest
+    pullPolicy: Always
+
+  # Number of instances
+  replicaCount: 1
+
+  # set where to put your data
+  persistentVolumeClaim: nfs-labserver
+  dataSubpath: data/sshpiper
+
+  # sshport on node
+  sshport: 30001
+
 
 docker:
   # API script for controlling docker(daemonset)
@@ -105,8 +125,6 @@ main:
 
 
 imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
 podSecurityContext: {}
 securityContext: {}
 nodeSelector: {}

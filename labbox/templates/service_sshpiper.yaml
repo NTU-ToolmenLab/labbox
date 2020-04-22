@@ -1,0 +1,18 @@
+{{- if .Values.sshpiper.enabled }}
+{{- $name := include "labbox.sshpiper" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "labbox.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "labbox.selectorLabels" . | nindent 4 }}
+    name: {{ $name }}
+  type: NodePort
+  ports:
+  - port: 2222
+    targetPort: 2222
+    nodePort: {{ .Values.sshpiper.sshport }}
+{{- end }}
