@@ -2,11 +2,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  namespace: user
   name: hostname
+  namespace: user
 spec:
   selector:
-    srvname: hostname
+    labbox-pod-name: hostname
   ports:
   - port: 8000
     targetPort: 8000

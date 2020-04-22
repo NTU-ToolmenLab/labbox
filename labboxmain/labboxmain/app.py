@@ -11,10 +11,6 @@ from celery import Celery
 def create_app(config={}):
     app = Flask(__name__)
     app.debug = True
-    config['registry_repo_default'] = config.get('registry_url') + '/' +  \
-                                      config.get('registry_repo_default') + ':'
-    config['registry_repo_backup'] = config.get('registry_url') + '/' +  \
-                                     config.get('registry_repo_backup') + ':'
     app.config.update(config)
     app.register_blueprint(bp, url_prefix='')
     db.init_app(app)

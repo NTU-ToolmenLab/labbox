@@ -6,7 +6,7 @@ RUN pip3 install --no-cache-dir \
     paramiko Flask-Testing lxml \
     gunicorn
 
-RUN mkdir -p /app
+COPY . /app
 WORKDIR /app
 ENV TZ Asia/Taipei
 CMD ["bash", "/app/run.sh"]

@@ -33,8 +33,12 @@ def record_params(setup_state):
     bp.sshpiper = config.get('sshpiper')
 
     # registry settings
-    bp.repo_default = config.get('registry_repo_default')
-    bp.repo_backup = config.get('registry_repo_backup')
+    url = ""
+    if config.get('registry_url'):
+        url = config.get('registry_url') + "/"
+    bp.repo_url = url
+    bp.repo_default = url + config.get('registry_repo_default') + ':'
+    bp.repo_backup = url + config.get('registry_repo_backup') + ':'
 
     if config.get('registry_url'):
         bp.registry = dict(
@@ -217,6 +221,9 @@ class Box(db.Model):
             'pull': pull,
             'homepath': user.name}
         now_dict.update(bp.create_rule(user))
+        if not bp.repo_url:
+            now_dict['pull'] = False
+
         # call api
         rep = baseAPI("create", **now_dict)
 

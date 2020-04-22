@@ -1,11 +1,12 @@
-{{- $name := include "labbox.api.docker" . -}}
+{{- $name := include "labbox.main" . -}}
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
   name: {{ $name }}
   labels:
     {{- include "labbox.labels" . | nindent 4 }}
 spec:
+  replicas: {{ .Values.main.replicaCount }}
   selector:
     matchLabels:
       {{- include "labbox.selectorLabels" . | nindent 6 }}
@@ -26,36 +27,42 @@ spec:
         - name: {{ $name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.docker.image.repository }}:{{ .Values.docker.image.tag }}"
-          imagePullPolicy: {{ .Values.docker.image.pullPolicy }}
+          image: "{{ .Values.main.image.repository }}:{{ .Values.main.image.tag }}"
+          imagePullPolicy: {{ .Values.main.image.pullPolicy }}
           ports:
-          - containerPort: 3476
+          - containerPort: 5000
             protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 3476
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 3476
+          env:
+          - name: FLASK_APP
+            value: labboxmain
+          - name: NAME_K8SAPI
+            value: {{ include "labbox.api.k8s" . }}
+          - name: NAME_REDIS
+            value: {{ include "labbox.main.redis" . }}
           volumeMounts:
-          {{- if and .Values.docker.subpath .Values.docker.persistentVolumeClaim }}
+          {{- if .Values.main.persistentVolumeClaim }}
+          {{- with .Values.main.subpath }}
           - name: volume
             mountPath: /app
-            subPath: {{ .Values.docker.subpath }}
+            subPath: {{ . }}
             readOnly: true
           {{- end }}
-          - name: docker-sock
-            mountPath: /var/run/docker.sock
+          {{- with .Values.main.data_subpath }}
+          - name: volume
+            mountPath: /data
+            subPath: {{ . }}
+          {{- end }}
+          {{- end }}
+      dnsPolicy: ClusterFirst
       volumes:
-      - name: docker-sock
-        hostPath: 
-          path: /var/run/docker.sock
-      {{- with .Values.docker.persistentVolumeClaim }}
+      {{- with .Values.main.persistentVolumeClaim }}
       - name: volume
         persistentVolumeClaim:
           claimName: {{ . }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.affinity }}
       affinity:

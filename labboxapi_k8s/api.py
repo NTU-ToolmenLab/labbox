@@ -124,7 +124,7 @@ def getPod(name):
     """Get pod by name."""
     try:
         pod = v1.read_namespaced_pod(name, ns)
-        if label and pod.metadata.labels.get(label):
+        if label and not pod.metadata.labels.get(label):
             abort(400, "Not in the same namespace")
         if pod.metadata.namespace != ns:
             abort(400, "Not in the same namespace")
@@ -206,7 +206,8 @@ def create():
     app.logger.info("Create " + name)
     template = yaml.load(open("/app/template/pod.yml"), Loader=yaml.FullLoader)
     template['metadata']['name'] = name
-    template['metadata']['labels']['srvname'] = name
+    template['metadata']['labels']['labbox-pod-name'] = name
+    template['metadata']['labels'][label] = "true"
     template['metadata']['namespace'] = ns
     template['spec']['containers'][0]['image'] = image
     template['spec']['nodeSelector']['kubernetes.io/hostname'] = request.form.get("node")
@@ -282,7 +283,7 @@ def create():
     # service
     template_service = yaml.load(open("/app/template/pod_service.yml"), Loader=yaml.FullLoader)
     template_service['metadata']['name'] = name
-    template_service['spec']['selector']['srvname'] = name
+    template_service['spec']['selector']['labbox-pod-name'] = name
 
     # create ingress and service
     try:

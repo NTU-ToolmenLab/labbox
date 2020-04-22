@@ -20,7 +20,7 @@ if __name__ == '__main__':
 @app.cli.command()
 def initdb():
     from labboxmain.models import db, add_user
-    from labboxmain.box_models import db as boxdb, add_image
+    from labboxmain.box_models import db as boxdb
     logger.warning('[Database] Recreate DataBase')
     # db.drop_all()
     # boxdb.drop_all()

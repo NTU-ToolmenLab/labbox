@@ -55,14 +55,53 @@ k8s:
 
   # Set to null if you don't want to modify the script
   persistentVolumeClaim: nfs-labserver
+
+  # Mount the source of k8s api file
   subpath: labboxapi_k8s
 
   # The template of user's instance
+  # Not mount it if subpath is not null
   template_subpath: labboxapi_k8s/template
 
   # Namespace and label of user's instance
   namespace: 'user1'
   user_label: "labbox-user1"
+
+
+main:
+  # Main interface
+
+  # Number of instances
+  replicaCount: 1
+
+  # Docker file should built by `build_docker.sh`
+  image:
+    pullPolicy: IfNotPresent
+    repository: linnil1/labboxmain
+    tag: latest
+
+  # Set to null if you don't want to modify the script
+  persistentVolumeClaim: nfs-labserver
+
+  # Mount the source of main
+  subpath: labboxmain
+
+  # Mount the data
+  data_subpath: data/
+
+  # I use traefik as reverse proxy with path /
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  hosts:
+    - host: null
+      paths: [/]
+
+  redis:
+    replicaCount: 1
+    image:
+      pullPolicy: IfNotPresent
+      repository: redis
+      tag: rc
 
 
 imagePullSecrets: []
@@ -74,13 +113,3 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi

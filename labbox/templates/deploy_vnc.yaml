@@ -18,10 +18,10 @@ spec:
         {{- include "labbox.selectorLabels" . | nindent 8 }}
         name: {{ $name }}
     spec:
-    {{- with .Values.vnc.imagePullSecrets }}
+      {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
-    {{- end }}
+      {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -47,6 +47,7 @@ spec:
           - name: volume
             mountPath: /app
             subPath: {{ . }}
+            readOnly: true
           {{- end }}
           {{- with .Values.vnc.dataSubpath }}
           - name: volume

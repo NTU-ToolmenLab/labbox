@@ -1,0 +1,14 @@
+{{- $name := include "labbox.main" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "labbox.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "labbox.selectorLabels" . | nindent 4 }}
+    name: {{ $name }}
+  ports:
+  - port: 5000
+    targetPort: 5000

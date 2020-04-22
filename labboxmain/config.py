@@ -1,4 +1,5 @@
 from celery.schedules import crontab
+import os
 
 
 # groupid=1 -> admin
@@ -11,8 +12,7 @@ def create_rule(user):
         create_param.update({
             'homepvc': "nfs-homenas",
             'naspvc': "nfs-labnas",
-        })
-    if user.groupid == 2:
+        }) if user.groupid == 2:
         create_param.update({
             'homepath': 'sfc/' + user.name,
             'homepvc': "nfs-homenas",
@@ -29,7 +29,7 @@ def create_rule(user):
 
 def gpu_decision_func(value):
     """
-    The decision function of finding available gpu.
+    The decision function of finding server with available gpu.
     Parameters
     ----------
     value: array
@@ -42,25 +42,25 @@ def gpu_decision_func(value):
 
 
 config = {
-    # basic
+    # Basic
     'bullet': "",
     'name': 'Toolmen',
     'domain_name': '{{ domain_name }}',
     'SECRET_KEY': '{{ secretkey }}',
-    'OAUTH2_REFRESH_TOKEN_GENERATOR': True,
-    'SQLALCHEMY_TRACK_MODIFICATIONS': False,
-    'SQLALCHEMY_DATABASE_URI': 'sqlite:////app/db.sqlite',
-    'SCHEDULER_API_ENABLED': True,
-    'logfile': '/app/log',
-    'create_rule': create_rule,
 
-    # Method for connecting to pod
-    'sshpiper': '/app/sshpiper/',
-    'vnc_password': '{{ vncpw }}',
-
-    # API: k8s + docker or docker only
-    # 'labboxapi-docker': 'http://dockerserver:3476', # Use without kubernetes
-    'labboxapi-k8s': 'http://labboxapi-k8s.default.svc.cluster.local:3476', # Use without dockercompose
+    # Sehedule
+    'celery_schedule': {
+        # Maintain every instances
+        'box-routine': {
+            'task': 'labboxmain.box.routineMaintain',
+            'schedule': crontab(hour=2, minute=0),
+        },
+        # Running queue
+        'queue-run': {
+            'task': 'labboxmain.box_queue.scheduleGPU',
+            'schedule': crontab(minute='*'),
+        },
+    },
 
     # Registry settigs
     'registry_url': 'harbor.default.svc.cluster.local', # empty to disable
@@ -69,22 +69,33 @@ config = {
     'registry_repo_backup': 'user/backup',
     'registry_repo_default': 'linnil1/serverbox',
 
+    # Data path
+    'SQLALCHEMY_DATABASE_URI': 'sqlite:////data/db.sqlite',
+    'logfile': '/data/main_log.log',
+
+    # init
+    'create_rule': create_rule,
+    'OAUTH2_REFRESH_TOKEN_GENERATOR': True,
+    'SQLALCHEMY_TRACK_MODIFICATIONS': False,
+    'SCHEDULER_API_ENABLED': True,
+
+    # Method for connecting to pod
+    'sshpiper': '/data/sshpiper/',
+    'vnc_password': '{{ vncpw }}',
+
+    # Only use dockerapi(Not maintained now)
+    # 'labboxapi-docker': 'http://dockerserver:3476', # Use without kubernetes
+
+    # Use k8s api
+    'labboxapi-k8s': "http://{}:3476".format(os.environ.get("NAME_K8SAPI")),
+
     # Backgroud method
-    'celery_broker_url': 'redis://labboxdb-redis.default.svc.cluster.local:6379',
-    'celery_result_backend': 'redis://labboxdb-redis.default.svc.cluster.local:6379',
-    'celery_schedule': {
-        'box-routine': {
-            'task': 'labboxmain.box.routineMaintain',
-            'schedule': crontab(hour=2, minute=0),
-        },
-        'queue-run': {
-            'task': 'labboxmain.box_queue.scheduleGPU',
-            'schedule': crontab(minute='*'),
-        },
-    },
+    'celery_broker_url': 'redis://{}:6379'.format(os.environ.get("NAME_REDIS")),
+    'celery_result_backend': 'redis://{}:6379'.format(os.environ.get("NAME_REDIS")),
 
     # GPU settings
     # Details see in box_queue.py
+    # TODO HOW TO DISABLE
     'queue_quota': 6,
     'gpu_monitor_url': 'http://lab-monitor-prometheus-server.monitor.svc.cluster.local/api/v1/',
     'gpu_query_metrics': ['nvidia_gpu_duty_cycle', 'nvidia_gpu_memory_used_bytes / nvidia_gpu_memory_total_bytes'],

@@ -17,7 +17,7 @@ spec:
         {{- include "labbox.selectorLabels" . | nindent 8 }}
         name: {{ $name }}
     spec:
-      {{- with .Values.k8s.imagePullSecrets }}
+      {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -49,10 +49,17 @@ spec:
           - name: DOCKERAPI_LABEL
             value: {{ include "labbox.api.docker" . }}
           volumeMounts:
-          {{- if and .Values.k8s.subpath .Values.k8s.persistentVolumeClaim }}
+          {{- if .Values.k8s.persistentVolumeClaim }}
+          {{- if .Values.k8s.subpath }}
           - name: volume
             mountPath: /app
             subPath: {{ .Values.k8s.subpath }}
+            readOnly: true
+          {{- else if .Values.k8s.template_subpath }}
+          - name: volume
+            mountPath: /app/template
+            subPath: {{ .Values.k8s.template_subpath }}
+          {{- end }}
           {{- end }}
       volumes:
       {{- with .Values.k8s.persistentVolumeClaim }}

@@ -5,7 +5,7 @@ metadata:
   namespace: user
   labels:
     labbox-user: "true"
-    srvname: "test"
+    labbox-pod-name: "test"
 spec:
   initContainers:
   - name: add-files-to-home
@@ -14,7 +14,7 @@ spec:
     volumeMounts:
     - name: homenas
       mountPath: /all.tar
-      subPath: server/LabDockerFile/all.tar
+      subPath: all.tar
       readOnly: true
     # - name: homenas
     #   mountPath: /home/ubuntu
