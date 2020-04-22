@@ -3,7 +3,6 @@ RUN pip3 --no-cache-dir install numpy
 RUN mkdir -p /app
 COPY build /app/build
 COPY websockify /app/websockify
-RUN touch /app/db.sqlite
 
 WORKDIR /app
 EXPOSE 6080

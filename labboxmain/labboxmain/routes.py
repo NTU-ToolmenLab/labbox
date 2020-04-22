@@ -5,7 +5,6 @@ import logging
 from urllib.parse import urlparse, urljoin
 
 from .models import getUserId, setPW
-from .adminpage import adminSet, adminView
 
 logger = logging.getLogger('labboxmain')
 bp = Blueprint(__name__, 'home')
@@ -92,18 +91,3 @@ def ChangePassword():
     logger.debug('[Passwd] ' + now_user.name)
     setPW(now_user, newone)
     return redirect(url_for('labboxmain.box_models.List'))
-
-
-@bp.route('/adminpage', methods=['GET', 'POST'])
-@flask_login.login_required
-def AdminPage():
-    now_user = flask_login.current_user
-    if now_user.groupid != 1:
-        abort(401)
-    logger.warning('[Admin] ' + now_user.name)
-    if request.method == 'GET':
-        return adminView()
-    else:
-        return adminSet(request.form)
-
-    return redirect(url_for('labboxmain.routes.Login'))

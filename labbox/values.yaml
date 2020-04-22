@@ -21,10 +21,10 @@ vnc:
 
   # set where to put your data
   persistentVolumeClaim: nfs-labserver
-  dataSubpath: data/db.sqlite
+  data_subpath: data/db.sqlite
 
   # Set to null if you don't want to modify the script
-  sourceSubpath: novnc
+  source_subpath: novnc
 
 
 sshpiper:
@@ -40,7 +40,7 @@ sshpiper:
 
   # set where to put your data
   persistentVolumeClaim: nfs-labserver
-  dataSubpath: data/sshpiper
+  subpath: data/sshpiper
 
   # sshport on node
   sshport: 30001

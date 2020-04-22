@@ -1,62 +1,36 @@
-from flask import render_template
+from flask_admin.contrib.sqla import ModelView
+from flask_admin import Admin
+from flask import abort
+import flask_login
+import logging
 from .models import User, db as userdb
 from .box_models import Box, Image, db as boxdb
 
-models = {'box': {
-             'model': Box,
-             'db': boxdb},
-          'image': {
-             'model': Image,
-             'db': boxdb},
-          'user': {
-             'model': User,
-             'db': userdb}}
+logger = logging.getLogger('labboxmain')
 
 
-def adminView():
-    tables = []
-    for m in models:
-        tables.append(
-            {"name": m,
-             "table": [{k: v for k, v in dict(a.__dict__).items()
-                        if not k.startswith('_')}
-                       for a in models[m]['model'].query.all()]})
-    for t in tables:
-        if not t['table']:
-            t['table'] = [{k: None for k in dict(models[m]['model'].__dict__)
-                           if not k.startswith('_')}]
-    return render_template('adminpage.html', tables=tables)
+class AuthModel(ModelView):
+    def is_accessible(self):
+        if not flask_login.current_user.is_authenticated:
+            abort(400, "Permission Denied")
+            return False
+
+        now_user = flask_login.current_user
+        if now_user.groupid != 1:
+            abort(400, "Permission Denied")
+            return False
+
+        logger.warning('[Admin] ' + now_user.name)
+        return True
 
 
-def adminSet(form):
-    # parse form
-    if form.get('table') not in models:
-        return adminView()
-    formwords = {i: form[i].strip() for i in form
-                 if i not in ['table', 'method']}
-    print(formwords)
+class UserModel(AuthModel):
+    def on_model_change(self, form, model, is_created):
+        if not model.password.startswith("$6$"):
+            model.setPassword(model.password)
 
-    cls = models[form['table']]['model']
-    db = models[form['table']]['db']
 
-    acls = cls.query.filter_by(id=int(formwords['id'])).first()
-    if form['method'] == 'delete':
-        db.session.delete(acls)
-        db.session.commit()
-    elif form['method'] == 'add':
-        modify = 1
-        if not acls:
-            acls = cls()
-            modify = 0
-        # print(cls.__table__.columns.items())
-        for i in cls.__table__.columns.items():
-            if not formwords[i[0]]:
-                continue
-            if i[0] == 'password':
-                acls.setPassword(formwords[i[0]])
-            else:
-                setattr(acls, i[0], i[1].type.python_type(formwords[i[0]]))
-        if not modify:
-            db.session.add(acls)
-        db.session.commit()
-    return adminView()
+admin = Admin()
+admin.add_view(AuthModel(Box, boxdb.session))
+admin.add_view(AuthModel(Image, boxdb.session))
+admin.add_view(UserModel(User, userdb.session))

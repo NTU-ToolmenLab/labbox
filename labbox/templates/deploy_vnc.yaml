@@ -43,13 +43,13 @@ spec:
               port: 6080
           volumeMounts:
           {{- if .Values.vnc.persistentVolumeClaim }}
-          {{- with .Values.vnc.sourceSubpath }}
+          {{- with .Values.vnc.source_subpath }}
           - name: volume
             mountPath: /app
             subPath: {{ . }}
             readOnly: true
           {{- end }}
-          {{- with .Values.vnc.dataSubpath }}
+          {{- with .Values.vnc.data_subpath }}
           - name: volume
             mountPath: /data/db.sqlite
             subPath: {{ . }}

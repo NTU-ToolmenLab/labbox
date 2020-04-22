@@ -7,8 +7,10 @@ app, celery = create_app(config)
 
 # Before create box model, it need to create celery first
 from .box_queue import bp as boxbp, db as boxdb
+from .adminpage import admin
 app.register_blueprint(boxbp, url_prefix='/box/')
 boxdb.init_app(app)
+admin.init_app(app)
 
 logger = logging.getLogger('labboxmain')
 logger.info('[All] Start')
