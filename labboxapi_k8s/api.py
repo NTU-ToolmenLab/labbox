@@ -1,4 +1,5 @@
 from kubernetes import client, config
+from jinja2 import Template
 from flask import Flask, jsonify, redirect, request, abort
 import yaml
 import re
@@ -188,102 +189,66 @@ def create():
     You should check by "search".
     """
     # read and handle error
-    name = request.form.get("name")
-    image = request.form.get("image")
-    node = request.form.get("node")
+    data = dict(request.form)
+    data['namespace'] = ns
+    print(data)
+    name = data.get("name")
+    node = data.get("node")
     if not name:
         abort(400, "No Name")
-    if not image:
+    if not data.get("image"):
         abort(400, "No Image")
     if not node:
         abort(400, "No Node")
     if node not in [pod['name'] for pod in listDockerServer()]:
         abort(400, "Node Not Found")
-    if not (request.form.get("homepvc") and request.form.get("homepath")):
+    if not (data.get("homepvc") and data.get("homepath")):
         abort(400, "homepvc and homepath required")
-
-    # fill the template
     app.logger.info("Create " + name)
-    template = yaml.load(open("/app/template/pod.yml"), Loader=yaml.FullLoader)
-    template['metadata']['name'] = name
-    template['metadata']['labels']['labbox-pod-name'] = name
-    template['metadata']['labels'][label] = "true"
-    template['metadata']['namespace'] = ns
-    template['spec']['containers'][0]['image'] = image
-    template['spec']['nodeSelector']['kubernetes.io/hostname'] = request.form.get("node")
-    template['spec']['containers'][0]['env'][0]['value'] = request.form.get("node")
 
-    # inittar (Make sure it's at first in volumeMounts)
-    if request.form.get("inittar"):
-        template['spec']['initContainers'][0]['volumeMounts'][0]['subPath'] = request.form.get("inittar")
+    # Multiple nas
+    # data["naspvc"] = data.get("naspvc").split(",")
 
-    # deal with home volume
-    template['spec']['volumes'].append({
-        'name': "homenas",
-        'persistentVolumeClaim': {'claimName': request.form.get("homepvc")}})
-    template['spec']['containers'][0]['volumeMounts'].append({
-        'name': "homenas",
-        'subPath': request.form.get("homepath"),
-        'mountPath': "/home/ubuntu"
+    # render pod
+    text_pod = open("/app/template/pod.yml").read()
+    template_pod = Template(text_pod).render({
+        **data,
+        "label": label,
     })
-    template['spec']['initContainers'][0]['volumeMounts'].append({
-        'name': "homenas",
-        'subPath': request.form.get("homepath"),
-        'mountPath': "/home/ubuntu"
-    })
+    template_pod = yaml.load(template_pod)
 
-    # deal with nas volume
-    if request.form.get("naspvc"):
-        naspvc = request.form.get("naspvc").split(",")
-        for nas in naspvc:
-            template['spec']['volumes'].append({
-                'name': "labnas-" + nas,
-                'persistentVolumeClaim': {'claimName': nas}})
-            template['spec']['containers'][0]['volumeMounts'].append({
-                'name': "labnas-" + nas,
-                'mountPath': "/home/nas" + ("/" + nas if len(naspvc) > 1 else "")
-            })
-
-    # pull
-    if request.form.get("pull").lower() == "true":
-        template['spec']['containers'][0]['imagePullPolicy'] = "Always"
-    if request.form.get("gpu"):
-        template['spec']['containers'][0]['env'].append({
-            'name': "NVIDIA_VISIBLE_DEVICES",
-            'value': request.form['gpu']})
-
-    # only run one command
-    if request.form.get("command"):
-        del template['spec']['containers'][0]['ports']
-        env = [env['name'] + "=" + str(env['value']) for env in template['spec']['containers'][0]['env']]
-        # template['spec']['containers'][0]['command'] = ["sudo"]
-        # template['spec']['containers'][0]['args'] = [*env, "bash", "-c", request.form.get("command")]
-        # testing
-        template['spec']['containers'][0]['command'] = ["sh"]
-        template['spec']['containers'][0]['args'] = ["-c", request.form.get("command")]
+    # post render
+    if data.get("command"):
+        t = template['spec']['containers'][0]
+        command_env = [env['name'] + "=" + str(env['value']) for env in t['env']]
+        t['args'].insert(0, command_env)
 
     # create pod
     try:
         pod = v1.read_namespaced_pod(name, ns)
         abort(400, "Double Creation")
     except client.rest.ApiException:
-        v1.create_namespaced_pod(ns, template)
+        v1.create_namespaced_pod(ns, template_pod)
 
     # only run one command
-    if request.form.get("command"):
+    if data.get("command"):
         return Ok()
 
     # ingress
-    template_ingress = yaml.load(open("/app/template/pod_ingress.yml"), Loader=yaml.FullLoader)
-    template_ingress['metadata']['name'] = name
-    path = template_ingress['spec']['rules'][0]['http']['paths'][0]
-    path['path'] = path['path'].replace("hostname", name)
-    path['backend']['serviceName'] = name
+    text_ingress = open("/app/template/ingress.yml").read()
+    template_ingress = Template(text_ingress).render({
+        'namespace': ns,
+        'name': name
+    })
+    template_ingress = yaml.load(template_ingress)
 
     # service
-    template_service = yaml.load(open("/app/template/pod_service.yml"), Loader=yaml.FullLoader)
-    template_service['metadata']['name'] = name
-    template_service['spec']['selector']['labbox-pod-name'] = name
+    text_service = open("/app/template/service.yml").read()
+    template_service = Template(text_service).render({
+        'namespace': ns,
+        'name': name
+    })
+    template_service = yaml.load(template_service)
 
     # create ingress and service
     try:
@@ -392,4 +357,4 @@ def goRedir(node, subpath):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3476)  # , debug=True)
+    app.run(host="0.0.0.0", port=3476, debug=True)

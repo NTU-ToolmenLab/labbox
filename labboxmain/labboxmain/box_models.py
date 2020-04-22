@@ -224,9 +224,6 @@ class Box(db.Model):
         if not bp.repo_url:
             now_dict['pull'] = False
 
-        # call api
-        rep = baseAPI("create", **now_dict)
-
         # async, wait for creation
         box = Box(box_name=name,
                   user=user.name,
@@ -237,6 +234,13 @@ class Box(db.Model):
                   box_text="Creating")
         db.session.add(box)
         db.session.commit()
+
+        # call api
+        rep = baseAPI("create", check=False, **now_dict)
+        if rep is None:
+            box.changeStatus("Create Error")
+            raise abort(400, "Create error")
+
         return box
 
 

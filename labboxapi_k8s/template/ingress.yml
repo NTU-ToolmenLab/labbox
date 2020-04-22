@@ -2,8 +2,8 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: hostname
-  namespace: user
+  name: {{ name }}
+  namespace: {{ namespace }}
   annotations:
     kubernetes.io/ingress.class: traefik
     traefik.frontend.rule.type: PathPrefix
@@ -11,7 +11,7 @@ spec:
   rules:
   - http:
       paths:
-      - path: /jupyter/hostname
+      - path: /jupyter/{{ name }}
         backend:
-          serviceName: hostname
+          serviceName: {{ name }}
           servicePort: 8000

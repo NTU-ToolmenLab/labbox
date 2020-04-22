@@ -39,6 +39,14 @@ spec:
             value: {{ include "labbox.api.k8s" . }}
           - name: NAME_REDIS
             value: {{ include "labbox.main.redis" . }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
           volumeMounts:
           {{- if .Values.main.persistentVolumeClaim }}
           {{- with .Values.main.subpath }}

@@ -1,12 +1,16 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test
-  namespace: user
+  name: {{ name }}
+  namespace: {{ namespace }}
   labels:
-    labbox-user: "true"
-    labbox-pod-name: "test"
+    {{ label }}: "true"
+    labbox-pod-name: {{ name }}
 spec:
+  restartPolicy: Never
+  nodeSelector:
+    kubernetes.io/hostname: {{ node }}
+
   initContainers:
   - name: add-files-to-home
     image: busybox
@@ -14,28 +18,37 @@ spec:
     volumeMounts:
     - name: homenas
       mountPath: /all.tar
-      subPath: all.tar
+      subPath: {{ inittar | default("all.tar") }}
       readOnly: true
-    # - name: homenas
-    #   mountPath: /home/ubuntu
-    #   subPath: guest
-  restartPolicy: Never
+    - name: homenas
+      mountPath: /home/ubuntu
+      subPath: {{ homepath }}
+
   containers:
   - name: main
-    image: nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
-    imagePullPolicy: IfNotPresent
-    # command: [tail]
-    # args: ["-f", "/dev/null"]
+    image: {{ image }}
+    imagePullPolicy: {{ "Always" if pull.lower() == 'true' else 'IfNotPresent' }}
+
+    {% if command %}
+    command: [sudo]
+    args: ["bash", "-c", {{command}}]
+    {% endif %}
+
+    {% if not command %}
     ports:
     - containerPort: 22
     - containerPort: 5900
     - containerPort: 8000
+    {% endif %}
+
     volumeMounts:
-    # - name: labnas
-    #   mountPath: /home/nas
-    # - name: homenas
-    #   mountPath: /home/ubuntu
-    #   subPath: guest
+    {% if naspvc %}
+    - name: labnas
+      mountPath: /home/nas
+    {% endif %}
+    - name: homenas
+      mountPath: /home/ubuntu
+      subPath: {{ homepath }}
     - name: homenas
       mountPath: /home/share
       subPath: share
@@ -43,25 +56,30 @@ spec:
       mountPath: /dev/shm
     - name: tmp
       mountPath: /home/tmp
+
     env:
     - name: node
-      value: lab304-server2
+      value: {{ node }}
+    {% if gpu %}
+    - name: NVIDIA_VISIBLE_DEVICES
+      value: {{ gpu }}
+    {% endif %}
+
     resources:
       requests:
         memory: "1Mi"
       limits:
         memory: "20Gi"
 
-
-  nodeSelector:
-    kubernetes.io/hostname: lab304-server2
   volumes:
-  #- name: labnas
-  #  persistentVolumeClaim:
-  #    claimName: nfs-labnas
-  #- name: homenas
-  #  persistentVolumeClaim:
-  #    claimName: nfs-homenas
+  {% if naspvc %}
+  - name: labnas
+    persistentVolumeClaim:
+      claimName: {{ naspvc }}
+  {% endif %}
+  - name: homenas
+    persistentVolumeClaim:
+      claimName: {{ homepvc }}
   - name: dshm
     emptyDir:
       medium: Memory
