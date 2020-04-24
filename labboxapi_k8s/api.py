@@ -201,10 +201,12 @@ def create():
         abort(400, "No Name")
     if not data.get("image"):
         abort(400, "No Image")
-    if not node:
-        abort(400, "No Node")
-    if node not in [pod['name'] for pod in listDockerServer()]:
+    if node and node not in [pod['name'] for pod in listDockerServer()]:
         abort(400, "Node Not Found")
+    if not node:
+        app.logger.warning("Node = any")
+        data["node"] = ""
+        # abort(400, "No Node")
     if not (data.get("homepvc") and data.get("homepath")):
         abort(400, "homepvc and homepath required")
     app.logger.info("Create " + name)
@@ -222,9 +224,9 @@ def create():
 
     # post render
     if data.get("command"):
-        t = template['spec']['containers'][0]
-        command_env = [env['name'] + "=" + str(env['value']) for env in t['env']]
-        t['args'].insert(0, command_env)
+        t = template_pod['spec']['containers'][0]
+        t['args'][0:0] = [env['name'] + "=" + str(env['value']) for env in t['env']]
+        t['args'].append(data['command'])
 
     # create pod
     try:
@@ -335,7 +337,7 @@ def logShow():
     # phase: Pending Running Succeeded Failed Unknown
     return Ok({
         'log': log,
-        'result': [result.started_at.timestamp(), result.finished_at.timestamp()] if result else [],
+        'times': [result.started_at.timestamp(), result.finished_at.timestamp()] if result else [],
         'status': pod.status.phase
     })
 

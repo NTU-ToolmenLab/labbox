@@ -5,6 +5,7 @@ import flask_login
 import logging
 from .models import User, db as userdb
 from .box_models import Box, Image, db as boxdb
+from .box_queue import BoxQueue
 
 logger = logging.getLogger('labboxmain')
 
@@ -34,3 +35,4 @@ admin = Admin()
 admin.add_view(AuthModel(Box, boxdb.session))
 admin.add_view(AuthModel(Image, boxdb.session))
 admin.add_view(UserModel(User, userdb.session))
+admin.add_view(AuthModel(BoxQueue, boxdb.session))

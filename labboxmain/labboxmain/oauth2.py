@@ -1,35 +1,33 @@
-# authlib 0.11
-from authlib.flask.oauth2 import (
+# authlib 0.14.1
+import time
+from flask_sqlalchemy import SQLAlchemy
+from authlib.integrations.sqla_oauth2 import (
+    OAuth2ClientMixin,
+    OAuth2AuthorizationCodeMixin,
+    OAuth2TokenMixin,
+    create_query_client_func,
+    create_save_token_func,
+    create_revocation_endpoint,
+    create_bearer_token_validator,
+)
+from authlib.integrations.flask_oauth2 import (
     AuthorizationServer,
     ResourceProtector,
     current_token
 )
-from authlib.common.security import generate_token
-from authlib.flask.oauth2.sqla import (
-    OAuth2ClientMixin,
-    OAuth2TokenMixin,
-    OAuth2AuthorizationCodeMixin,
-    create_query_client_func,
-    create_save_token_func,
-    create_bearer_token_validator,
-    create_revocation_endpoint,
-)
 from authlib.oauth2.rfc6749 import grants
-
+from werkzeug.security import gen_salt
 import flask_login
 from flask import Blueprint, request, render_template, jsonify, abort
 import logging
-from .models import db, User
+from .models import User, db
 
 
 logger = logging.getLogger('labboxmain')
 bp = Blueprint(__name__, 'oauth')
-domain_name = ''
-require_oauth = ResourceProtector()
-server = AuthorizationServer()
 
 
-class Client(db.Model, OAuth2ClientMixin):
+class OAuth2Client(db.Model, OAuth2ClientMixin):
     __tablename__ = 'oauth2_client'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
@@ -37,19 +35,7 @@ class Client(db.Model, OAuth2ClientMixin):
     user = db.relationship('User')
 
 
-class Token(db.Model, OAuth2TokenMixin):
-    __tablename__ = 'oauth2_token'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(
-        db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
-    user = db.relationship('User')
-
-    def is_refresh_token_expired(self):
-        expires_at = self.issued_at + self.expires_in
-        return expires_at < time.time()
-
-
-class AuthorizationCode(db.Model, OAuth2AuthorizationCodeMixin):
+class OAuth2AuthorizationCode(db.Model, OAuth2AuthorizationCodeMixin):
     __tablename__ = 'oauth2_code'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
@@ -57,25 +43,37 @@ class AuthorizationCode(db.Model, OAuth2AuthorizationCodeMixin):
     user = db.relationship('User')
 
 
-class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
-    # no NONE method
-    TOKEN_ENDPOINT_AUTH_METHODS = ['client_secret_basic', 'client_secret_post']
+class OAuth2Token(db.Model, OAuth2TokenMixin):
+    __tablename__ = 'oauth2_token'
 
-    def create_authorization_code(self, client, user, request):
-        code = generate_token(48)
-        item = AuthorizationCode(
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
+    user = db.relationship('User')
+
+    def is_refresh_token_active(self):
+        if self.revoked:
+            return False
+        expires_at = self.issued_at + self.expires_in * 2
+        return expires_at >= time.time()
+
+
+class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
+    def create_authorization_code(self, client, grant_user, request):
+        code = gen_salt(48)
+        item = OAuth2AuthorizationCode(
             code=code,
             client_id=client.client_id,
             redirect_uri=request.redirect_uri,
             scope=request.scope,
-            user_id=user.id,
+            user_id=grant_user.id,
         )
         db.session.add(item)
         db.session.commit()
         return code
 
     def parse_authorization_code(self, code, client):
-        item = AuthorizationCode.query.filter_by(
+        item = OAuth2AuthorizationCode.query.filter_by(
             code=code, client_id=client.client_id).first()
         if item and not item.is_expired():
             return item
@@ -88,27 +86,59 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
         return User.query.get(authorization_code.user_id)
 
 
+class PasswordGrant(grants.ResourceOwnerPasswordCredentialsGrant):
+    def authenticate_user(self, username, password):
+        user = User.query.filter_by(name=username).first()
+        if user is not None and user.checkPassword(password):
+            return user
+
+
+class RefreshTokenGrant(grants.RefreshTokenGrant):
+    def authenticate_refresh_token(self, refresh_token):
+        token = OAuth2Token.query.filter_by(refresh_token=refresh_token).first()
+        if token and token.is_refresh_token_active():
+            return token
+
+    def authenticate_user(self, credential):
+        return User.query.get(credential.user_id)
+
+    def revoke_old_credential(self, credential):
+        credential.revoked = True
+        db.session.add(credential)
+        db.session.commit()
+
+
+query_client = create_query_client_func(db.session, OAuth2Client)
+save_token = create_save_token_func(db.session, OAuth2Token)
+authorization = AuthorizationServer(
+    query_client=query_client,
+    save_token=save_token,
+)
+require_oauth = ResourceProtector()
+
+
 def config_oauth(app, dn=''):
-    global domain_name
-    domain_name = dn
-    query_client = create_query_client_func(db.session, Client)
-    save_token = create_save_token_func(db.session, Token)
-    server.init_app(
-        app, query_client=query_client, save_token=save_token
-    )
-    server.register_grant(AuthorizationCodeGrant)
-    server.register_grant(grants.ImplicitGrant)
+    bp.domain_name = dn
+    authorization.init_app(app)
+
+    # support all grants
+    authorization.register_grant(grants.ImplicitGrant)
+    authorization.register_grant(grants.ClientCredentialsGrant)
+    authorization.register_grant(AuthorizationCodeGrant)
+    authorization.register_grant(PasswordGrant)
+    authorization.register_grant(RefreshTokenGrant)
 
     # support revocation
-    RevocationEndpoint = create_revocation_endpoint(db.session, Token)
-    server.register_endpoint(RevocationEndpoint)
+    revocation_cls = create_revocation_endpoint(db.session, OAuth2Token)
+    authorization.register_endpoint(revocation_cls)
 
     # protect resource
-    BearerTokenValidator = create_bearer_token_validator(db.session, Token)
-    require_oauth.register_token_validator(BearerTokenValidator())
+    bearer_cls = create_bearer_token_validator(db.session, OAuth2Token)
+    require_oauth.register_token_validator(bearer_cls())
 
-    # reigster
-    app.register_blueprint(bp, url_prefix='/oauth')
+
+def split_by_crlf(s):
+    return [v for v in s.splitlines() if v]
 
 
 @bp.route('/client', methods=['GET', 'POST'])
@@ -120,9 +150,8 @@ def client():
         abort(401)
     logger.debug('[oauth] client ' + now_user.name)
 
-    if request.method == 'GET':
-        return render_template('clients.html', clients=Client.query.all())
-    clientCreate(request.form, now_user)
+    if request.method == 'POST':
+        clientCreate(request.form, now_user)
     return render_template('clients.html', clients=Client.query.all())
 
 
@@ -133,25 +162,38 @@ def clientCreate(form, user):
                           client_id=form['delete_client_id']).first())
         db.session.commit()
         return
-    logger.debug('[oauth] oauth client created by ' + user.name)
-    client = Client(**form.to_dict(flat=True))
-    client.user_id = user.id
-    client.client_id = generate_token(24)
+
+    client_id = gen_salt(24)
+    client_id_issued_at = int(time.time())
+    client = OAuth2Client(
+        client_id=client_id,
+        client_id_issued_at=client_id_issued_at,
+        user_id=user.id,
+    )
+
     if client.token_endpoint_auth_method == 'none':
         client.client_secret = ''
     else:
-        client.client_secret = generate_token(48)
+        client.client_secret = gen_salt(48)
+
+    form = request.form
+    client_metadata = {
+        "client_name": form["client_name"],
+        "client_uri": form["client_uri"],
+        "grant_types": split_by_crlf(form["grant_type"]),
+        "redirect_uris": split_by_crlf(form["redirect_uri"]),
+        "response_types": split_by_crlf(form["response_type"]),
+        "scope": form["scope"],
+        "token_endpoint_auth_method": form["token_endpoint_auth_method"]
+    }
+    logger.debug('[oauth] oauth client created by ' + user.name)
+    client.set_client_metadata(client_metadata)
     db.session.add(client)
     db.session.commit()
+    return render_template('clients.html', clients=Client.query.all())
 
 
-@bp.route('/token', methods=['POST'])
-def issue_token():
-    logger.debug('[oauth] token ' + str(request.form))
-    return server.create_token_response()
-
-
-@bp.route('/authorize')
+@bp.route('/authorize', methods=['GET', 'POST'])
 @flask_login.login_required
 def authorize():
     '''
@@ -160,16 +202,22 @@ def authorize():
     '''
     logger.debug('[oauth] auth ' + str(request.form))
     now_user = flask_login.current_user
-    grant = server.validate_consent_request(end_user=now_user)
-    return server.create_authorization_response(grant_user=now_user)
+    grant_user = authorization.validate_consent_request(end_user=now_user)
+    return authorization.create_authorization_response(grant_user=grant_user)
+
+
+@bp.route('/token', methods=['POST'])
+def issue_token():
+    logger.debug('[oauth] token ' + str(request.form))
+    return authorization.create_token_response()
 
 
 @bp.route('/revoke', methods=['POST'])
 def revoke_token():
-    return server.create_endpoint_response('revocation')
+    return authorization.create_endpoint_response('revocation')
 
 
-@bp.route('/profile', methods=['GET'])
+@bp.route('/profile')
 @require_oauth('profile')
 def profile():
     user = current_token.user
@@ -179,4 +227,4 @@ def profile():
         'id': name,
         'username': name,
         'name': name,
-        'email': name + '@' + domain_name})
+        'email': name + '@' + bp.domain_name})

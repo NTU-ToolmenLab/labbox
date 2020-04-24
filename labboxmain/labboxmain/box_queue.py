@@ -23,9 +23,9 @@ class BoxQueue(db.Model):
         ID
     user:
         Who own this task
-    command:
+    command: str
         The commnad want to run of this task
-    queueing: bool
+    status: str
         Determine the task is waiting(True)
     create_date: date
         The date the task created
@@ -35,50 +35,76 @@ class BoxQueue(db.Model):
     user        = db.Column(db.String(32), nullable=False)
     image       = db.Column(db.String(64), nullable=False)
     command     = db.Column(db.String(128))
-    queueing    = db.Column(db.Boolean, default=True)
+    status      = db.Column(db.String(32), default="InQueue")
     create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    # status
+    # * InQueue
+    # * Running
+    # * Done
+    # * Error
 
     def __str__(self):
         return "queue-" + str(self.id)
 
     def getData(self):
         """Return all information of the task"""
-        return {'name':     str(self),
-                'user':     self.user,
-                'image':    self.image.split(":")[-1],
-                'command':  self.command,
-                'queueing': self.queueing,
-                'date':     self.create_date.strftime("%Y/%m/%d %X")}
+        return {'name':    str(self),
+                'user':    self.user,
+                'date':    self.create_date.strftime("%Y/%m/%d %X")},
+                'image':   self.image.split(":")[-1],
+                'status':  self.status,
+                'command': self.command}
+
+    def changeStatus(self, st):
+        """ Change the status text """
+        self.status = st
+        logger.debug(f"[Queue] {self} -> {st}")
+        db.session.commit()
+
+    def checkStatus(self):
+        """ Check and change the status of boxqueue """
+        rep = baseAPI("search", name=str(self))
+        if self.status == "Running":
+            if rep["status"] == "Succeeded":
+                self.changeStatus("Complete")
+            if rep["status"] == "Failed":
+                self.changeStatus("Error")
+        return {
+            'node': rep['node'],
+            'start_time': rep['start']
+        }
 
     def getLog(self):
         """Get the log of the task even it's still running"""
-        if self.queueing:
+        if self.status == "InQueue":
             abort(400, "Not yet created")
-        rep = baseAPI("search", name=str(self), check=False)
-        log = baseAPI("log",    name=str(self), check=False)
-        if log.get('result'):
-            log['running_time(s)'] = log['result'][1] - log['result'][0]
-            del log['result']
-        return {'node': rep['node'],
-                'start_time': rep['start'],
+        log = baseAPI("log", name=str(self), check=False)
+        if log.get('times'):
+            log['running_time(s)'] = log['times'][1] - log['times'][0]
+            del log['times']
+        return {**self.checkStatus(),
                 **log}
 
-    def run(self, nodegpu):
+    def run(self, node, gpu):
         """
-        Run the task at specific gpu
+        Run the task at specific gpu on specific node
 
         After started, it will mark used in redis.
 
         Parameters
         ----------
-        nodegpu: tuple
-            (node, gpu_index)
-        """
-        if not self.queueing:
-            abort(400, "Double creation")
-        user = User.query.filter_by(name=self.user).first()
-        node, gpu = nodegpu
+        node: str
 
+        gpu_index: str
+        """
+        if self.status != "InQueue":
+            abort(400, "Double creation")
+        self.changeStatus("Running")
+
+        user = User.query.filter_by(name=self.user).first()
+
+        # parameters
         now_dict = {
             'name': str(self),
             'node': node,
@@ -88,10 +114,18 @@ class BoxQueue(db.Model):
             'pull': True,
             'homepath': user.name}
         now_dict.update(bp.create_rule(user))
-        rep = baseAPI("create", **now_dict)
+        if not bp.repo_url:
+            now_dict['pull'] = False
+        logger.debug(f"[Queue] Run {self} {now_dict}")
 
-        self.queueing = False
-        bp.redis.set(str(nodegpu), time.time())
+        # run
+        rep = baseAPI("create", check=False, **now_dict)
+        if rep is None:
+            self.changeStatus("Error")
+            return
+
+        # save
+        bp.redis.set(str((node, gpu)), time.time())
         db.session.commit()
 
     def delete(self):
@@ -118,7 +152,8 @@ class BoxQueue(db.Model):
         user: object
             The user.
         name:
-            The pod name you want to find.
+            The pod name you want to find,
+            it should be queue-{i}.
             Empty will list all available boxqueue.
         """
         # check name
@@ -185,7 +220,7 @@ def queue():
     if len(data['command']) >= 128:
         abort(400, "Command Too Long")
     if len(BoxQueue.query.filter_by(user=user.name).all()) > bp.queue_quota:
-        abort(400, "You have too mnay in queue")
+        abort(400, "You have too many tasks in queue")
 
     # Validate Image
     image = data.get('image')
@@ -219,9 +254,9 @@ def log():
         The task name
     """
     user = flask_login.current_user
-    box = BoxQueue.find(user, request.form.get('name'))
-    logger.debug("[Queue] log " + str(box))
-    return jsonify(box.getLog())
+    bq = BoxQueue.find(user, request.form.get('name'))
+    logger.debug(f"[Queue] log {bq}")
+    return jsonify(bq.getLog())
 
 
 @bp.route("/queueDelete", methods=["POST"])
@@ -236,9 +271,9 @@ def queueDelete():
         The task name
     """
     user = flask_login.current_user
-    box = BoxQueue.find(user, request.form.get('name'))
-    logger.debug("[Queue] delete " + str(box))
-    box.delete()
+    bq = BoxQueue.find(user, request.form.get('name'))
+    logger.debug(f"[Queue] delete {bp}")
+    bq.delete()
     return redirect(url_for("labboxmain.box_models.queue"))
 
 
@@ -269,7 +304,7 @@ def getGPUStatus():
         metrics = rep['data']['result']
 
         for met in metrics:
-            id = (met['metric']['node_name'], met['metric']['minor_number'])
+            id = (met['metric']['node_name'], str(met['metric']['minor_number']))
             value = [float(i[1]) for i in met['values']]
             gpu_st[id] = gpu_st.get(id, []) + [value]
     return gpu_st
@@ -301,14 +336,32 @@ def getAvailableGPUs():
 
 
 @celery.task()
+def boxRun(bid, node, gpu):
+    bq = BoxQueue.query.get(bid)
+    logger.debug(f"[Queue] {bq} use {node} {gpu}")
+    bq.run(node, gpu)
+
+
+@celery.task()
 def scheduleGPU():
     """Checking task and gpu status"""
-    if not BoxQueue.query.filter_by(queueing=True).count():
-        return
-    avail_gpus = getAvailableGPUs()
-    boxqueue = BoxQueue.query.filter_by(queueing=True)\
-                             .limit(len(avail_gpus))\
-                             .all()
-    for i, box in enumerate(boxqueue):
-        logger.debug("[Queue] " + str(box) + " use " + str(avail_gpus[i]))
-        box.run(avail_gpus[i])
+    for _ in range(60):
+        if bp.gpu_url:
+            avail_gpus = getAvailableGPUs()
+        else:
+            avail_gpus = [('', 0)] * 10
+
+        # Run to Complete
+        boxqueue = BoxQueue.query.filter_by(status="Running")\
+                                 .all()
+        for bq in boxqueue:
+            bq.checkStatus()
+
+        # Queue to run
+        boxqueue = BoxQueue.query.filter_by(status="InQueue")\
+                                 .limit(len(avail_gpus))\
+                                 .all()
+        for i, bq in enumerate(boxqueue):
+            boxRun.delay(bq.id, *avail_gpus[i])
+
+        time.sleep(1)
