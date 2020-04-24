@@ -146,7 +146,7 @@ def split_by_crlf(s):
 def client():
     ''' An Interface to control oauth by admin '''
     now_user = flask_login.current_user
-    if now_user.groupid != 1:
+    if now_user.groupid != 0:  # admin
         abort(401)
     logger.debug('[oauth] client ' + now_user.name)
 

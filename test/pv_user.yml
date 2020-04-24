@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: user1
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-homenas
+spec:
+  storageClassName: nfs-homenas
+  persistentVolumeReclaimPolicy: Delete
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2Gi
+  nfs:
+    server: 172.17.0.2
+    path: /app
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nfs-homenas
+  namespace: user1
+spec:
+  storageClassName: nfs-homenas
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Gi

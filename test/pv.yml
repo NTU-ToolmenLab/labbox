@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-labserver
+spec:
+  storageClassName: nfs-labserver
+  persistentVolumeReclaimPolicy: Delete
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 2Gi
+  nfs:
+    server: 172.17.0.2
+    path: /app
+---
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nfs-labserver
+spec:
+  storageClassName: nfs-labserver
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Gi

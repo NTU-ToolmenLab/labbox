@@ -2,8 +2,8 @@ from celery.schedules import crontab
 import os
 
 
-# groupid=1 -> admin
-# groupid=0 -> Our users
+# groupid=0 -> admin
+# groupid=1 -> Our users
 # groupid=2 -> Other users
 # groupid=3 -> Our guest
 def create_rule(user):
@@ -105,5 +105,3 @@ config['celery_schedule']['queue-run'] = {
     'task': 'labboxmain.box_queue.scheduleGPU',
     'schedule': crontab(minute='*'),
 }
-
-print(config)

@@ -39,7 +39,7 @@ If release name contains chart name it will be used as a full name.
 {{- printf "%s-main" .Release.Name -}}
 {{- end -}}
 {{- define "labbox.main.redis" -}}
-{{- printf "%s-main-redis" .Release.Name -}}
+{{- printf "%s-db-redis" .Release.Name -}}
 {{- end -}}
 {{- define "labbox.sshpiper" -}}
 {{- printf "%s-sshpiper" .Release.Name -}}

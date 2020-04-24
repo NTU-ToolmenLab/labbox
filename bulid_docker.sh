@@ -1,7 +1,6 @@
 # Main program
 echo "BUILD labboxmain"
 docker build labboxmain -t linnil1/labboxmain
-docker run -it --rm -v $PWD/labboxmain:/app -e FLASK_APP=labboxmain linnil1/labboxmain flask initdb
 
 # Control docker to start or stop
 echo "BUILD labboxapi-docker"

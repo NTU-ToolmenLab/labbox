@@ -30,10 +30,8 @@ def initdb():
     boxdb.create_all()
     db.session.commit()
     boxdb.session.commit()
-    # testing
-    # add_user('linnil1', 'test123', groupid=1, quota=2)
-    # add_image('user', 'learn3.0', 'cuda9.0 cudnn7 python3')
-    # add_image('user', 'learn3.1', 'cuda9.0 cudnn7 python3 caffe2')
+    # add_user('linnil1', 'test123', groupid=0, quota=2)
+    # add_image('*', 'learn3.0', 'cuda9.0 cudnn7 python3')
 
 
 @app.cli.command()
@@ -42,8 +40,8 @@ def std_add_user():
     from getpass import getpass
     import time
     name = input('Username ')
-    passwd = getpass()
-    passwd1 = getpass('Password Again: ')
+    passwd = getpass().strip()
+    passwd1 = getpass('Password Again: ').strip()
     groupid = int(input('Group: (Interger)'))
     quota = int(input('Quota: '))
     assert(passwd == passwd1 and len(passwd) >= 8)
@@ -56,7 +54,7 @@ def std_add_image():
     user = input('Username ')
     name = input('Imagename ')
     description = input('description ')
-    Image.create(user, name, description)
+    Image.create(name, user, description)
 
 
 @app.cli.command()
@@ -69,36 +67,7 @@ def stop(server):
 @app.cli.command()
 def run_test():
     from pprint import pprint
-    from labboxmain.models import db as user_db, User
-    from labboxmain.box import Box, boxCreate, boxDelete, boxRescue, boxStop, boxChangeNode
+    from labboxmain.box import Box
     import time
-    image = "harbor.default.svc.cluster.local/linnil1/serverbox:learn3.6"
-    user = User.query.filter_by(name="linnil1").first()
-    for box in Box.query.all()[-3:]:
-        print(box.getStatus())
-
-    print("RUN")
-    boxCreate(user.id, "test", "test123", "lab304-server1", image, pull=True, parent='')
-
-    box = Box.query.filter_by(box_name="test").first()
-    print(box.getStatus())
-
-    # boxRescue(box.id)
-    # boxChangeNode(box.id, "lab304-server2")
-    # boxDelete(box.id)
-    # boxStop(box.id)
-
-    box = Box.query.filter_by(box_name="test").first()
-    print(box.getStatus())
-    """
-    from labboxmain.box_queue import BoxQueue
-    box = BoxQueue.create(user, image, "echo 123")
-    box = BoxQueue.find(user, "queue-1")
-    box.run(("lab304-server1", 1))
-    print(box.getData())
-    print(box.getLog())
-    time.sleep(10)
-    print(box.getData())
-    print(box.getLog())
-    box.delete()
-    """
+    for box in Box.query.all():
+        print(box.box_name)

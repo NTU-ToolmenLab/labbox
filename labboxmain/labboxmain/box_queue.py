@@ -51,7 +51,7 @@ class BoxQueue(db.Model):
         """Return all information of the task"""
         return {'name':    str(self),
                 'user':    self.user,
-                'date':    self.create_date.strftime("%Y/%m/%d %X")},
+                'date':    self.create_date.strftime("%Y/%m/%d %X"),
                 'image':   self.image.split(":")[-1],
                 'status':  self.status,
                 'command': self.command}
@@ -165,7 +165,7 @@ class BoxQueue(db.Model):
             abort(400, "Wrong Name")
 
         # search in database
-        if user.groupid == 1:  # admin
+        if user.groupid == 0:  # admin
             box = BoxQueue.query.filter_by(id=name).first()
         else:
             box = BoxQueue.query.filter_by(id=name,
@@ -204,7 +204,7 @@ def queue():
         queue = []
         for box in BoxQueue.query.all():
             q = box.getData()
-            q['permit'] = user.groupid == 1 or box.user == user.name
+            q['permit'] = user.groupid == 0 or box.user == user.name
             queue.append(q)
         return render_template("boxqueue.html",
                                queue=queue,
@@ -225,7 +225,7 @@ def queue():
     # Validate Image
     image = data.get('image')
     parent = None
-    if Image.query.filter_by(user="user", name=image).first():
+    if Image.query.filter_by(user="*", name=image).first():
         image = bp.repo_default + data.get('image')
     elif Box.query.filter_by(user=user.name, box_name=image).first():
         # TODO

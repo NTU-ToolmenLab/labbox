@@ -57,6 +57,8 @@ def getUserId(name, password):
 
 
 def add_user(name, passwd='', time=0, groupid=0, quota=0):
+    name = name.strip()
+    assert(not name)
     logger.info('[Database] Add user ' + name)
     u = User.query.filter_by(name=name).first()
     assert(not u)

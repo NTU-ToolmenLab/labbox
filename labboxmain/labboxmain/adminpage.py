@@ -17,7 +17,7 @@ class AuthModel(ModelView):
             return False
 
         now_user = flask_login.current_user
-        if now_user.groupid != 1:
+        if now_user.groupid != 0:
             abort(400, "Permission Denied")
             return False
 

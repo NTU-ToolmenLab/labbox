@@ -254,7 +254,7 @@ class Image(db.Model):
         The full name of image
     user:
         The owner of image.
-        When user="user", everyone can access it.
+        When user="*", everyone can access it.
     description:
         The comment of this image.
     """
@@ -268,9 +268,11 @@ class Image(db.Model):
         return "<Image {}>".format(self.name)
 
     @classmethod
-    def create(cls, user, name, description=""):
+    def create(cls, name, user="*", description=""):
         """Create the image"""
         logger.info("[Database] Add Image: " + user + " -> " + name)
+        name = name.strip()
+        assert(not name)
         assert(not Image.query.filter_by(name=name,
                                          user=user).first())
 

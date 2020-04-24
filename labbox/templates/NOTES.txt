@@ -1,10 +1,14 @@
-1. Get the application URL by running these commands:
 {{- $name := include "labbox.vncname" . -}}
 {{- if .Values.vnc.enabled }}
-VNC is enable at
-{{- range $host := .Values.vnc.hosts }}
-  {{- range .paths }}
-  http://{{ default $host.host $name }}{{ . }}
-  {{- end }}
+VNC is enabled at path {{- range .Values.vnc.hosts }} {{- range .paths }} {{ . }} {{- end }} {{- end }}
 {{- end }}
+{{- if .Values.sshpiper.enabled }}
+SSHpiper is enabled at nodeport {{ .Values.sshpiper.sshport }}
 {{- end }}
+labboxmain is enabled at path {{- range .Values.main.hosts }} {{- range .paths }} {{ . }} {{- end }} {{- end }}
+
+1. Check all container work well
+kubectl get pods
+
+2. Check instance namespace
+kubectl get pods -n {{ .Values.k8s.namespace }}

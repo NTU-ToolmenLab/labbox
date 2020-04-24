@@ -27,7 +27,7 @@ def List():
 def getPods():
     """Get user's pods"""
     user = flask_login.current_user
-    if user.groupid == 1:  # admin
+    if user.groupid == 0:  # admin
         boxes_ori = Box.query.all()
     else:
         boxes_ori = Box.query.filter_by(user=user.name).all()
@@ -46,7 +46,7 @@ def getCreateParams():
 
 def getImages():
     """Available images"""
-    images = Image.query.filter_by(user="user").order_by(Image.id.desc()).all()
+    images = Image.query.filter_by(user="*").order_by(Image.id.desc()).all()
     images = [{'name': i.name, 'description': i.description} for i in images]
 
     # TODO
@@ -76,7 +76,7 @@ def vncToken():
     logger.debug("[VNC] " + user.name + " " + str(docker_name))
     if not docker_name:
         abort(400, "VNC Token Error")
-    if user.groupid == 1:  # admin
+    if user.groupid == 0:  # admin
         box = Box.query.filter_by(docker_name=docker_name).first()
     else:
         box = Box.query.filter_by(user=user.name,
@@ -98,7 +98,7 @@ def api():
     name = data.get('name')
     if not name:
         abort(400, "What is your environment name")
-    if user.groupid == 1:  # admin
+    if user.groupid == 0:  # admin
         box = Box.query.filter_by(docker_name=name).first()
     else:
         box = Box.query.filter_by(user=user.name,
@@ -176,7 +176,7 @@ def create():
     # Validation for image. Will find the possible image name.
     image = data.get('image')
     parent = None
-    if Image.query.filter_by(user="user", name=image).first():
+    if Image.query.filter_by(user="*", name=image).first():
         image = bp.repo_default + data.get('image')
     elif Box.query.filter_by(user=user.name, box_name=image).first():
         parent = Box.query.filter_by(user=user.name, box_name=image).first()
