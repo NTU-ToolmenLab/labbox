@@ -4,16 +4,11 @@
 queue
 {% endblock %}
 
-{% block head %}
-<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
-<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-{% endblock %}
+{% block head %} {% endblock %}
 
 {% block body %}
 {% include 'nav.html' %}
-  <div class="container">
+  <div class="container" id="app">
     <form action="{{ url_for('labboxmain.box_models.queue')}}" method="post">
     <div class="input-group mb-3">
       <div class="input-group-prepend">
@@ -32,106 +27,110 @@ queue
       <div class="input-group-append">
         <button type="submit" class="btn btn-outline-primary"/>Submit Command</button>
       </div>
-      <a class="btn btn-outline-primary" onClick="window.location.href='{{ url_for('labboxmain.box_models.queue') }}'"><i class="fas fa-sync"></i></a>
+      <!--a class="btn btn-outline-primary" onClick="window.location.href='url'"><i class="fas fa-sync"></i></a-->
     </div>
     </form>
+  {% raw %}
+    <input type="checkbox" v-model="auto_refresh">
+    <label for="sync">Auto Refresh</label>
+
     <table class="table table-striped">
       <tbody>
-      {% for data in queue %}
-        <tr>
-          <th scope="row"> {{ data.name }} </th>
-          <td>
-            <button class="btn btn-primary" type="button"
-                    data-toggle="collapse" data-target="#{{ data.name }}"
-                    aria-expanded="true" aria-controls="collapseExample"
-                    {% if not data.permit or data.status == "InQueue" %} disabled {% endif %} />
-              Log
-            </button>
-            {% if data.permit %}
-              {{ data.command }}
-            {% endif %}
-          </td>
-          <td> {{ data.user }} </td>
-          <td> {{ data.image }} </td>
-          <td> {{ data.date }} </td>
-          {% if data.status == "InQueue" %}
-            <td> <i class="fas fa-spinner"></i> Waiting </td>
-          {% elif data.status == "Running" %}
-            <td> <i class="fas fa-spinner fa-spin"></i> Running </td>
-          {% elif data.status == "Complete" %}
-            <td> <i class="fas fa-thumbs-up"></i> Complete </td>
-          {% else %}
-            <td> <i class="fas fa-exclamation-triangle"></i> Error </td>
-          {% endif %}
-          <td>
-            <form action="{{ url_for('labboxmain.box_models.queueDelete')}}" method="post">
-              <input type="hidden"   name="name"     value="{{data.name}}"/>
-              <div class="btn-group" role="group">
-                <input type="submit" name="method" value="Delete" class="btn btn-outline-danger"/
-                {% if not data.permit %} disabled {% endif %} />
-              </div>
-            </form>
-          </td>
-        </tr>
-        <tr id="{{ data.name }}" class="collapse" id="{{ data.name }}"><td colspan="7">
-          <a class="btn btn-outline-primary" onClick=showLog("{{ data.name }}")><i class="fas fa-sync"></i></a>
-          <table class="table">
-            <thead><tr></tr></thead>
-            <tbody><tr></tr></tbody>
-          </table>
-          <pre><code> No Log Yet </code></pre>
-        </td></tr>
-      {% endfor %}
+        <template v-for="data in queue" :key="data.name">
+          <tr>
+            <th scope="row"> {{ data.name }} </th>
+            <td><button class="btn btn-primary" type="button" v-on:click="syncClick(data.name)"
+                        v-bind:disabled="!data.permit">Log</button></td>
+            <td><span v-if="data.permit"> {{ data.command }} </span></td>
+            <td> {{ data.user }}  </td>
+            <td> {{ data.image }} </td>
+            <td> {{ data.date }}  </td>
+            <td      v-if="data.status == 'InQueue'">  <i class="fas fa-spinner"></i>            Waiting </td>
+            <td v-else-if="data.status == 'Running'">  <i class="fas fa-spinner fa-spin"></i>    Running </td>
+            <td v-else-if="data.status == 'Complete'"> <i class="fas fa-thumbs-up"></i>         Complete </td>
+            <td v-else>                                <i class="fas fa-exclamation-triangle"></i> Error </td>
+            <td>
+              <form v-bind:action="api_delete" method="post">
+                <input type="hidden"   name="name"     v-bind:value="data.name"/>
+                <div class="btn-group" role="group">
+                  <input type="submit" name="method" value="Delete" class="btn btn-outline-danger"/
+                      v-bind:disabled="!data.permit"/>
+                </div>
+              </form>
+            </td>
+
+          </tr>
+          <tr v-if="enable_log[data.name]">
+            <td colspan="8">
+              <table class="table">
+                <thead><tr>
+                    <th v-for="(item, key) in logs[data.name]" v-if="key !== 'log'"> {{ key }} </th>
+                </tr></thead>
+                <tbody><tr>
+                    <td v-for="(item, key) in logs[data.name]" v-if="key !== 'log'"> {{ item }} </td>
+                </tr></tbody>
+              </table>
+              <pre><code> {{ logs[data.name].log }} </code></pre>
+            </td>
+          </tr>
+        </template>
       </tbody>
     </table>
   </div>
-<script>
-const url = "/box/log";
+  {% endraw %}
 
-$('.collapse').on('show.bs.collapse', (evt) => {
-    var name = evt.target.id;
-    showLog(name);
-})
-
-function showLog(name) {
-    var http = new XMLHttpRequest();
-    http.open("POST", url, true);
-    http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    http.send("name=" + name);
-
-    http.onreadystatechange = () => {
-        if (http.status == 200 && http.readyState == 4) {
-            var data = JSON.parse(http.responseText);
-            var ele = document.querySelector("#" + name);
-
-            // Remove all children
-            // https://stackoverflow.com/questions/3955229/remove-all-child-elements-of-a-dom-node-in-javascript
-            var a = ele.querySelector("tbody>tr");
-            var cNode = a.cloneNode(false);
-            a.parentNode.replaceChild(cNode, a);
-            var a = ele.querySelector("thead>tr");
-            var cNode = a.cloneNode(false);
-            a.parentNode.replaceChild(cNode, a);
-
-            // log
-            ele.querySelector("pre>code").innerText = data.log;
-
-            // status
-            Object.keys(data).forEach( (d) => {
-                if (d == "log")
-                    return;
-                var td = document.createElement("td");
-                td.innerText = data[d];
-                ele.querySelector("tbody>tr").appendChild(td);
-
-                var td = document.createElement("th");
-                td.innerText = d;
-                td.setAttribute("scope", "col");
-                ele.querySelector("thead>tr").appendChild(td);
-            });
+  <script>
+var app = new Vue({
+  el: '#app',
+  data: {
+      queue: [],
+      api_delete: "{{ url_for('labboxmain.box_models.queueDelete')}}",
+      logs: {},
+      enable_log: {},
+      auto_refresh: true,
+  },
+  watch: {
+    queue: function() {
+      this.queue.forEach((data) => {
+        if (!(data.name in this.enable_log)) {
+          this.enable_log[data.name] = false;
         }
+      })
     }
-}
-
+  },
+  methods: {
+    update_queue: function() {
+      axios.get("{{ url_for('labboxmain.box_models.queue_status')}}")
+           .then(response => {this.queue = response.data.data;})
+    },
+    update_log: function(id) {
+      axios.post("{{ url_for('labboxmain.box_models.log')}}", "name=" + id)
+           .then(response => {this.logs[id] = response.data;})
+    },
+    syncClick: function(name) {
+      this.enable_log[name] = !this.enable_log[name];
+      console.log(name);
+      if (this.enable_log[name]) {
+        console.log(name);
+        this.update_log(name);
+      }
+    },
+  },
+  mounted() {
+    this.update_queue();
+    window.setInterval(() => {
+      if (!this.auto_refresh) {
+        return;
+      }
+      this.update_queue();
+      for (var name in this.enable_log) {
+        if (this.enable_log[name]) {
+          console.log("Update log", name);
+          this.update_log(name);
+        }
+      }
+    }, 3000)
+  }
+})
 </script>
 {% endblock %}

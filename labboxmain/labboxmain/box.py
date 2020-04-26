@@ -24,6 +24,7 @@ def List():
 @bp.route("/status")
 @flask_login.login_required
 def apistatus():
+    """ An api endpoint for status """
     return jsonify({'box': getPods(),
                     'create': getCreateParams()})
 

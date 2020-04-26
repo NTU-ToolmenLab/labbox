@@ -201,13 +201,7 @@ def queue():
     user = flask_login.current_user
     # list task
     if request.method == "GET":
-        queue = []
-        for box in BoxQueue.query.all():
-            q = box.getData()
-            q['permit'] = user.groupid == 0 or box.user == user.name
-            queue.append(q)
         return render_template("boxqueue.html",
-                               queue=queue,
                                create_images=[i['name'] for i in getImages()])
 
     # Insert task
@@ -240,6 +234,19 @@ def queue():
     # Add into queue
     BoxQueue.create(user=user, image=image, command=data['command'])
     return redirect(url_for("labboxmain.box_models.queue"))
+
+
+@bp.route("/queue/status")
+@flask_login.login_required
+def queue_status():
+    """ An api endpoint for queue status """
+    user = flask_login.current_user
+    queue = []
+    for box in BoxQueue.query.all():
+        q = box.getData()
+        q['permit'] = user.groupid == 0 or box.user == user.name
+        queue.append(q)
+    return jsonify({'data': queue})
 
 
 @bp.route("/log", methods=["POST"])

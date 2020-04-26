@@ -15,7 +15,7 @@ list
           {{ config.bullet|safe }}
         </div-->
         <input type="checkbox" v-model="auto_refresh">
-        <label for="sync">Auto Refresh {{ checked }}</label>
+        <label for="sync">Auto Refresh</label>
 
         {% raw %}
           <div class="card my-3" v-for="data in datas">
@@ -123,17 +123,19 @@ var app = new Vue({
       auto_refresh: true,
   },
   methods: {
-    update_box: (self) => axios.get("{{ url_for('labboxmain.box_models.apistatus')}}")
-                               .then(response => {
-                                     self.datas = response.data.box;
-                                     self.create_param = response.data.create;
-                               }),
+    update_box: function() {
+      axios.get("{{ url_for('labboxmain.box_models.apistatus')}}")
+           .then(response => {
+                 this.datas = response.data.box;
+                 this.create_param = response.data.create;
+       })
+    },
   },
   mounted() {
-    this.update_box(this);
+    this.update_box();
     window.setInterval(() => {
       if (this.auto_refresh) {
-        this.update_box(this);
+        this.update_box();
       }
     }, 3000)
   }
