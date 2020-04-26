@@ -1,4 +1,4 @@
-from flask import request, abort, render_template, redirect, url_for
+from flask import request, abort, render_template, redirect, url_for, jsonify
 import flask_login
 import logging
 import time
@@ -18,9 +18,14 @@ logger = logging.getLogger("labboxmain")
 def List():
     """Render available pods on UI"""
     return render_template("boxlist.html",
-                           container_list=getPods(),
-                           create_param=getCreateParams(),
                            image_list=getImages())
+
+
+@bp.route("/status")
+@flask_login.login_required
+def apistatus():
+    return jsonify({'box': getPods(),
+                    'create': getCreateParams()})
 
 
 # Some function for rendering web
