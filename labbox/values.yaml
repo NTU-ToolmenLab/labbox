@@ -116,6 +116,7 @@ main:
     - host: null
       paths: [/]
 
+  # DB for background processes
   redis:
     replicaCount: 1
     image:

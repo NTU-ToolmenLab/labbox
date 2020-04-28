@@ -8,9 +8,11 @@ app, celery = create_app(config)
 # Before create box model, it need to create celery first
 from .box_queue import bp as boxbp, db as boxdb
 from .adminpage import admin
-app.register_blueprint(boxbp, url_prefix='/box/')
+from .oauth2 import config_oauth
+app.register_blueprint(boxbp, url_prefix='/box')
 boxdb.init_app(app)
 admin.init_app(app)
+config_oauth(app, config.get('domain_name'), url_prefix="/oauth")
 
 logger = logging.getLogger('labboxmain')
 logger.info('[All] Start')
@@ -60,7 +62,7 @@ def std_add_image():
 @app.cli.command()
 @click.option('--server', default='all', help='Server hostname. `--server=all` for all nodes')
 def stop(server):
-    from labboxmain.box import boxesStop 
+    from labboxmain.box import boxesStop
     boxesStop(node=server)
 
 

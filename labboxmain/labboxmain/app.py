@@ -4,7 +4,6 @@ import logging
 from werkzeug.middleware.proxy_fix import ProxyFix
 from .routes import bp
 from .models import db, login_manager
-from .oauth2 import config_oauth
 from celery import Celery
 
 
@@ -15,7 +14,6 @@ def create_app(config={}):
     app.register_blueprint(bp, url_prefix='')
     db.init_app(app)
     login_manager.init_app(app)
-    config_oauth(app, config.get('domain_name'))
     setLog(app)
 
     login_manager.login_view = 'labboxmain.routes.Login'  # redir

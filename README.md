@@ -19,6 +19,7 @@ Some features are added into this project.
     * SSH tunnels passing through sshpiper are handled by labboxmain.
     * noVNC query for permission from labboxmain.
     * Oauth server
+    * Framework: Vue + flask
 
 ## USAGE
 
@@ -27,25 +28,36 @@ Some features are added into this project.
 ./build_docker.sh
 ```
 
-1. Modify `labboxmain/config.py`
-* [ ] Separte config file from source code
+1. Edit configuartion
+* `labboxmain/config.py`
+* `./values.yaml` You can copy from `labbox/values.yaml`
 
-2.  Add user
+2. Run it
+
+You can try this meta configuration before creating
+```
+cd test
+helm install lab-traefik stable/traefik -f traefik.yml
+kubectl create -f pv.yml pv_user.yml
+cd ..
+```
+
+Using helm to install this package
+```
+helm install labbox ./labbox -f values.yaml
+```
+
+3. Where is your Data
+Logs and database are put in `data_subpath`(Deafult: `data/`)
+
+
+### Add user
 Note: groupid=0 is admin
 ```
 docker run -it --rm -v $PWD/data:/app/ linnil1/labboxmain flask std-add-user
 ```
 
-3. Configure on web after started
-
-go to your.domain/admin/
-
-4. Add help.html
-
-You can add `help.html` in `labboxmain/labboxmain/templates/`
-* [ ] TODO: Separte help.html from source code
-
-5. Add more node
+### Add node
 Add labboxgroup=0-1-2 for allowing group 0,1,2 access this node.
 ```
 kubectl label nodes lab304-server2 labboxgroup=0-1-2 --overwrite
@@ -54,31 +66,26 @@ kubectl label nodes lab304-server2 labboxgroup=0-1-2 --overwrite
 And check it:
 `kubectl get nodes --show-labels`
 
-7. It is recommand to use the docker image built in
+
+### Configure on web after started
+Go to `your.domain/admin/`
+
+
+### Add help.html
+You can add `help.html` in `labboxmain/labboxmain/templates/`
+
+
+### Add images and enviorment files for user
+It is recommand to use the docker image built in
 https://github.com/NTU-ToolmenLab/LabDockerFile
 
 and put `all.tar` under the root of `nfs-homenas`(PV)
 
-8. All the output or database are put in `./data`
 
-9. You can try this configuration before creating
-```
-cd test
-helm install lab-traefik stable/traefik -f traefik.yml
-kubectl create -f pv.yml pv_user.yml
-cd ..
-```
-
-10. Using helm to install this package
-```
-helm install labbox ./labbox
-```
-
-11. If any emergency happened
+### If any emergency happened
 ```
 kubectl exec -it labboxmain-6599f4b74c-z5jcx flask stop --server=all
 ```
-
 
 ### VNC
 If you want to do more fancy things, like auto login for vnc password.
@@ -97,3 +104,7 @@ xmlHttp.open("POST", "/box/vnctoken, true);  // true for asynchronous
 xmlHttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
 xmlHttp.send("token=" + tokenname);
 ```
+
+## TODO
+* [ ] Separte config file from source code
+* [ ] Separte help.html from source code

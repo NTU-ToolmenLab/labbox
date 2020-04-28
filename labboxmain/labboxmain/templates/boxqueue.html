@@ -95,7 +95,7 @@ var app = new Vue({
         if (!(data.name in this.enable_log)) {
           this.enable_log[data.name] = false;
         }
-      })
+      });
     }
   },
   methods: {
@@ -105,15 +105,16 @@ var app = new Vue({
     },
     update_log: function(id) {
       axios.post("{{ url_for('labboxmain.box_models.log')}}", "name=" + id)
-           .then(response => {this.logs[id] = response.data;})
+           .then(response => {this.$set(this.logs, id, response.data);})
     },
     syncClick: function(name) {
-      this.enable_log[name] = !this.enable_log[name];
+      // this.enable_log[name] = !this.enable_log[name];
+      this.$set(this.enable_log, name, !this.enable_log[name]);
       console.log(name);
       if (this.enable_log[name]) {
         console.log(name);
         this.update_log(name);
-      }
+      };
     },
   },
   mounted() {

@@ -117,7 +117,7 @@ authorization = AuthorizationServer(
 require_oauth = ResourceProtector()
 
 
-def config_oauth(app, dn=''):
+def config_oauth(app, dn='', url_prefix="/oauth"):
     bp.domain_name = dn
     authorization.init_app(app)
 
@@ -136,6 +136,9 @@ def config_oauth(app, dn=''):
     bearer_cls = create_bearer_token_validator(db.session, OAuth2Token)
     require_oauth.register_token_validator(bearer_cls())
 
+    # main
+    app.register_blueprint(bp, url_prefix=url_prefix)
+
 
 def split_by_crlf(s):
     return [v for v in s.splitlines() if v]
@@ -152,13 +155,13 @@ def client():
 
     if request.method == 'POST':
         clientCreate(request.form, now_user)
-    return render_template('clients.html', clients=Client.query.all())
+    return render_template('clients.html', clients=OAuth2Client.query.all())
 
 
 def clientCreate(form, user):
     if form.get('delete_client_id'):
         logger.debug('[oauth] oauth client delete by ' + user.name)
-        db.session.delete(Client.query.filter_by(
+        db.session.delete(OAuth2Client.query.filter_by(
                           client_id=form['delete_client_id']).first())
         db.session.commit()
         return
@@ -190,7 +193,7 @@ def clientCreate(form, user):
     client.set_client_metadata(client_metadata)
     db.session.add(client)
     db.session.commit()
-    return render_template('clients.html', clients=Client.query.all())
+    return render_template('clients.html', clients=OAuth2Client.query.all())
 
 
 @bp.route('/authorize', methods=['GET', 'POST'])

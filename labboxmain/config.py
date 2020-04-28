@@ -57,6 +57,19 @@ config = {
         },
     },
 
+    # Link
+    'links': [{
+        'name': 'Monitor',
+        'link': '/monitor'
+        }, {
+        'name': 'Drive',
+        'link': '/drive'
+        }, {
+        'name': 'Help',
+        'link': '/help'
+        }
+    ],
+
     # Registry settigs
     'registry_url': 'harbor.default.svc.cluster.local', # empty to disable
     'registry_user': 'user',
