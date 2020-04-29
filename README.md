@@ -48,6 +48,7 @@ helm install labbox ./labbox -f values.yaml
 ```
 
 3. Where is your Data
+
 Logs and database are put in `data_subpath`(Deafult: `data/`)
 
 
@@ -104,6 +105,11 @@ xmlHttp.open("POST", "/box/vnctoken, true);  // true for asynchronous
 xmlHttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
 xmlHttp.send("token=" + tokenname);
 ```
+
+## Demo Image
+![](https://raw.githubusercontent.com/NTU-ToolmenLab/labbox/master/test/demo1.jpg)
+![](https://raw.githubusercontent.com/NTU-ToolmenLab/labbox/master/test/demo2.jpg)
+
 
 ## TODO
 * [ ] Separte config file from source code
