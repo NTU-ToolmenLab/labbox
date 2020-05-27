@@ -102,7 +102,7 @@ class Box(db.Model):
         ID
     box_name:
         The readable name for the pod.
-    box_text:
+    status:
         The comment for pod.
     docker_name:
         The name of pod. Use this to search pod in k8s.
@@ -116,6 +116,8 @@ class Box(db.Model):
         The node where the pod run on.
     image:
         The image to start pods
+    image_base:
+        The base image that provided by admin
     create_date: date
         The date when the pod created
     commit_date: date
@@ -125,20 +127,21 @@ class Box(db.Model):
     """
     __tablename__ = "box"
     id = db.Column(db.Integer, primary_key=True)
-    box_name = db.Column(db.String(32), nullable=False)
-    box_text = db.Column(db.String(256), default="")
-    docker_ip = db.Column(db.String(32), default="")  # add after creation
+    box_name    = db.Column(db.String(32), nullable=False)
+    status      = db.Column(db.String(64), default="")
     docker_name = db.Column(db.String(32), nullable=False)
-    docker_id = db.Column(db.String(64), default="")  # add after creation
+    docker_id   = db.Column(db.String(64), default="")  # add after creation
+    docker_ip   = db.Column(db.String(32), default="")  # add after creation
+    user        = db.Column(db.String(32), nullable=False)
+    node        = db.Column(db.String(32), nullable=False)
+    image       = db.Column(db.String(64), nullable=False)
+    image_base  = db.Column(db.String(64), nullable=False)
+    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    commit_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    parent      = db.Column(db.String(64), default="")
     # relationship is not very helpful to my project
     # user = db.relationship("User")
     # user.name
-    user = db.Column(db.String(32), nullable=False)
-    node = db.Column(db.String(32), nullable=False)
-    image = db.Column(db.String(64), nullable=False)
-    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    commit_date = db.Column(db.DateTime)
-    parent = db.Column(db.String(64), default="")
 
     def __str__(self):
         return "<Box {}>".format(self.docker_name)
@@ -147,10 +150,10 @@ class Box(db.Model):
         """
         Get the status of each pod.
 
-        1. The error status will be put on box_text and will show first.
+        1. The error status will be put on status and will show first.
         2. Check the ID is consistent to database.
         """
-        status = self.box_text
+        status = self.status
         if not status:
             rep = self.api("search", check=False)
             if not rep:
@@ -205,11 +208,11 @@ class Box(db.Model):
         db.session.commit()
 
     def changeStatus(self, status):
-        self.box_text = status
+        self.status = status
         db.session.commit()
 
     @classmethod
-    def create(cls, user, name, realname, node, image, pull=True, parent=""):
+    def create(cls, user, name, realname, node, image, image_base="", pull=True, parent=""):
         """Create the pod"""
         # create param
         now_dict = {
@@ -227,9 +230,10 @@ class Box(db.Model):
                   user=user.name,
                   docker_name=now_dict['name'],
                   image=now_dict['image'],
+                  image_base=image_base,
                   parent=parent,
                   node=now_dict['node'],
-                  box_text="Creating")
+                  status="Creating")
         db.session.add(box)
         db.session.commit()
 
@@ -261,7 +265,7 @@ class Image(db.Model):
     __tablename__ = "image"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), nullable=False)
-    user = db.Column(db.String(32), nullable=False)
+    user = db.Column(db.String(32), default="*")
     description = db.Column(db.String)
 
     def __str__(self):

@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 import flask_login
 import passlib.hash
 import logging
+import datetime
 
 logger = logging.getLogger('labboxmain')
 db = SQLAlchemy()
@@ -11,13 +12,15 @@ login_manager = flask_login.LoginManager()
 
 class User(db.Model, flask_login.UserMixin):
     __tablename__ = 'user'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(32), unique=True)
-    password = db.Column(db.String(300), nullable=False)
-    passtime = db.Column(db.Float, default=0)
-    groupid = db.Column(db.Integer, default=0, nullable=False)
-    quota = db.Column(db.Integer, default=0)
-    use_quota = db.Column(db.Integer, default=0)
+    id        = db.Column(db.Integer,     primary_key=True)
+    name      = db.Column(db.String(32),  unique=True)
+    disable   = db.Column(db.Boolean,     default=False)
+    email     = db.Column(db.String(64),  default="")
+    password  = db.Column(db.String(300), nullable=False)
+    passtime  = db.Column(db.DateTime,    default=lambda: datetime.datetime.utcfromtimestamp(0))
+    groupid   = db.Column(db.Integer,     default=0, nullable=False)
+    quota     = db.Column(db.Integer,     default=0)
+    use_quota = db.Column(db.Integer,     default=0)
 
     def __str__(self):
         return '<User {}>'.format(self.name)
@@ -56,7 +59,7 @@ def getUserId(name, password):
     return user_loader(u.id)
 
 
-def add_user(name, passwd='', time=0, groupid=0, quota=0):
+def add_user(name, passwd='', time=0, groupid=0, quota=0, email=""):
     name = name.strip()
     assert(not name)
     logger.info('[Database] Add user ' + name)
@@ -65,7 +68,8 @@ def add_user(name, passwd='', time=0, groupid=0, quota=0):
     u = User(name=name,
              passtime=time,
              groupid=groupid,
-             quota=quota)
+             quota=quota,
+             email="")
     u.setPassword(passwd)
     db.session.add(u)
     db.session.commit()

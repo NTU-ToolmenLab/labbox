@@ -32,6 +32,8 @@ def Login():
             if not is_safe_url(nexturl):
                 return abort(400)
             logger.info('[Login] ' + name)
+            if User.query.filter_by(name=box.user).first().disable:
+                return abort(400, "You are disabled by admin")
             return redirect(nexturl or url_for('labboxmain.box_models.List'))
         else:
             logger.warning('[Login] fail ' + name)

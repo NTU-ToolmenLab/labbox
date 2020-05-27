@@ -44,10 +44,11 @@ def std_add_user():
     name = input('Username ')
     passwd = getpass().strip()
     passwd1 = getpass('Password Again: ').strip()
+    assert(passwd == passwd1 and len(passwd) >= 8)
     groupid = int(input('Group: (Interger)'))
     quota = int(input('Quota: '))
-    assert(passwd == passwd1 and len(passwd) >= 8)
-    return add_user(name, passwd, time.time(), groupid, quota)
+    email = input("Email: ")
+    return add_user(name, passwd, time.time(), groupid, quota, email)
 
 
 @app.cli.command()

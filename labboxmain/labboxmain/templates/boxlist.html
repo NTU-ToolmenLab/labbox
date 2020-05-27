@@ -18,7 +18,7 @@ list
         <label for="sync">Auto Refresh</label>
 
         {% raw %}
-          <div class="card my-3" v-for="data in datas">
+          <div class="card my-3" v-for="data in datas" v-bind:key="data.name">
             <div class="card-header"> {{ data.name }} </div>
             <div class="card-body">
               <h5 class="card-title"> status: {{ data.status }} </h5>
@@ -121,6 +121,7 @@ var app = new Vue({
       apiurl: "{{ url_for('labboxmain.box_models.api')}}",
       api_create: "{{ url_for('labboxmain.box_models.create')}}",
       auto_refresh: true,
+      refresh_times: 100,
   },
   methods: {
     update_box: function() {
@@ -134,7 +135,12 @@ var app = new Vue({
   mounted() {
     this.update_box();
     window.setInterval(() => {
+      if (this.refresh_times < 0) {
+        this.auto_refresh = false;
+        this.refresh_times = 100;
+      }
       if (this.auto_refresh) {
+        this.refresh_times -= 1;
         this.update_box();
       }
     }, 3000)

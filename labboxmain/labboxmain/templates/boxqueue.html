@@ -60,7 +60,7 @@ queue
             </td>
 
           </tr>
-          <tr v-if="enable_log[data.name]">
+          <tr v-if="tmp && enable_log[data.name]">
             <td colspan="8">
               <table class="table">
                 <thead><tr>
@@ -88,6 +88,7 @@ var app = new Vue({
       logs: {},
       enable_log: {},
       auto_refresh: true,
+      tmp: true,
   },
   watch: {
     queue: function() {
@@ -108,8 +109,9 @@ var app = new Vue({
            .then(response => {this.$set(this.logs, id, response.data);})
     },
     syncClick: function(name) {
-      // this.enable_log[name] = !this.enable_log[name];
       this.$set(this.enable_log, name, !this.enable_log[name]);
+      this.tmp = false;
+      this.tmp = true;
       console.log(name);
       if (this.enable_log[name]) {
         console.log(name);

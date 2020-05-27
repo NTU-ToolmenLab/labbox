@@ -192,7 +192,7 @@ def create():
     else:
         abort(400, "No such environment")
 
-    boxCreate.delay(user.id, name, realname, data['node'], image, True, parent)
+    boxCreate.delay(user.id, name, realname, data['node'], image, image, True, parent)
     return redirect(url_for("labboxmain.box_models.List"))
 
 
@@ -239,6 +239,7 @@ def boxChangeNode(bid, node):
     name = box.box_name
     docker_name = box.docker_name
     backupname = box.getImageName()
+    image_base = box.image_base
 
     # commit and push
     box.commit()
@@ -246,11 +247,11 @@ def boxChangeNode(bid, node):
 
     # delete and create
     boxDelete(bid)
-    boxCreate(uid, name, docker_name, node, backupname, pull=True, parent=parent)
+    boxCreate(uid, name, docker_name, node, backupname, image_base, pull=True, parent=parent)
 
 
 @celery.task()
-def boxCreate(uid, name, realname, node, image, pull=True, parent=""):
+def boxCreate(uid, name, realname, node, image, image_base="", pull=True, parent=""):
     """Create all of pod and it's related"""
     # user
     user = User.query.get(uid)
@@ -258,7 +259,7 @@ def boxCreate(uid, name, realname, node, image, pull=True, parent=""):
     user_db.session.commit()
 
     # create
-    box = Box.create(user, name, realname, node, image, pull, parent)
+    box = Box.create(user, name, realname, node, image, image_base, pull, parent)
     podCreate(box)
     piperCreate(box.box_name, box.docker_ip)
 
@@ -276,6 +277,7 @@ def boxRescue(bid):
     name = box.box_name
     parent = box.parent
     docker_name = box.docker_name
+    image_base = box.image_base
 
     # delete(Note: did not delete image)
     box.api("delete", check=False)  # force delete
@@ -289,7 +291,7 @@ def boxRescue(bid):
     box.delete()
 
     # create
-    boxCreate(user.id, name, docker_name, node, image,
+    boxCreate(user.id, name, docker_name, node, image, image_base,
               pull=False, parent=parent)
 
 
