@@ -3,3 +3,4 @@ __pycache__/
 build
 noVNC
 websockify
+data/

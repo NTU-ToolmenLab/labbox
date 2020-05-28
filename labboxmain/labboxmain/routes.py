@@ -4,7 +4,7 @@ import flask_login
 import logging
 from urllib.parse import urlparse, urljoin
 
-from .models import getUserId, setPW
+from .models import getUserId, setPW, User
 
 logger = logging.getLogger('labboxmain')
 bp = Blueprint(__name__, 'home')
@@ -32,7 +32,7 @@ def Login():
             if not is_safe_url(nexturl):
                 return abort(400)
             logger.info('[Login] ' + name)
-            if User.query.filter_by(name=box.user).first().disable:
+            if User.query.filter_by(name=name).first().disable:
                 return abort(400, "You are disabled by admin")
             return redirect(nexturl or url_for('labboxmain.box_models.List'))
         else:

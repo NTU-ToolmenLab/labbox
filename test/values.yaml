@@ -1,0 +1,134 @@
+vnc:
+  # VNC interface
+  enabled: true
+
+  # I use traefik as reverse proxy with path /vnc/
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.frontend.rule.type: PathPrefixStrip
+  hosts:
+    - host: null
+      paths: [/vnc/]
+
+  # Docker file should built by `build_docker.sh`
+  image:
+    repository: harbor.default.svc.cluster.local/linnil1/novnc
+    tag: latest
+    pullPolicy: Always
+
+  # Number of instances
+  replicaCount: 1
+
+  # set where to put your data
+  persistentVolumeClaim: nfs-labserver
+  data_subpath: labbox/data/db.sqlite
+
+  # Set to null if you don't want to modify the script
+  source_subpath: labbox/novnc
+
+
+sshpiper:
+  # sshpiper for instances
+  enabled: true
+  image:
+    repository: farmer1992/sshpiperd
+    tag: latest
+    pullPolicy: Always
+
+  # Number of instances
+  replicaCount: 1
+
+  # set where to put your data
+  persistentVolumeClaim: nfs-labserver
+  subpath: labbox/data/sshpiper
+
+  # sshport on node
+  sshport: 30000
+
+
+docker:
+  # API script for controlling docker(daemonset)
+
+  # Docker file should built by `build_docker.sh`
+  image:
+    repository: harbor.default.svc.cluster.local/linnil1/labboxapi-docker
+    tag: latest
+    pullPolicy: Always
+
+  # Set to null if you don't want to modify the script
+  persistentVolumeClaim: nfs-labserver
+  subpath: labbox/labboxapi_docker
+
+
+k8s:
+  # API script for controlling k8s
+  # It will create rbac by default
+
+  # Number of instances
+  replicaCount: 1
+
+  # Docker file should built by `build_docker.sh`
+  image:
+    pullPolicy: Always
+    repository: harbor.default.svc.cluster.local/linnil1/labboxapi-k8s
+    tag: latest
+
+  # Set to null if you don't want to modify the script
+  persistentVolumeClaim: nfs-labserver
+
+  # Mount the source of k8s api file
+  subpath: labbox/labboxapi_k8s
+
+  # The template of user's instance
+  # Not mount it if subpath is not null
+  template_subpath: labbox/labboxapi_k8s/template
+
+  # Namespace and label of user's instance
+  namespace: 'user'
+  user_label: "labbox-user"
+
+
+main:
+  # Main interface
+
+  # Number of instances
+  replicaCount: 1
+
+  # Docker file should built by `build_docker.sh`
+  image:
+    pullPolicy: Always
+    repository: harbor.default.svc.cluster.local/linnil1/labboxmain
+    tag: latest
+
+  # Set to null if you don't want to modify the script
+  persistentVolumeClaim: nfs-labserver
+
+  # Mount the source of main
+  subpath: labbox/labboxmain
+
+  # Mount the data
+  data_subpath: labbox/data/
+
+  # I use traefik as reverse proxy with path /
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  hosts:
+    - host: null
+      paths: [/]
+
+  # DB for background processes
+  redis:
+    replicaCount: 1
+    image:
+      pullPolicy: Always
+      repository: redis
+      tag: rc
+
+
+imagePullSecrets: []
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+resources: {}
