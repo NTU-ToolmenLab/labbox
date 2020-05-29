@@ -1,6 +1,7 @@
 __pycache__/
 *.swp
-build
-noVNC
-websockify
+novnc/build
+novnc/noVNC
+novnc/websockify
 data/
+labboxmain/labboxmain/templates/help.html

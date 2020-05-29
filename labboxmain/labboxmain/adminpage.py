@@ -3,7 +3,7 @@ from flask_admin import Admin
 from flask import abort
 import flask_login
 import logging
-from .models import User, db as userdb
+from .models import User, sendUserMail, db as userdb
 from .box_models import Box, Image, db as boxdb
 from .box_queue import BoxQueue
 
@@ -26,8 +26,24 @@ class AuthModel(ModelView):
 
 
 class UserModel(AuthModel):
+    column_list = ["id", "name", "disable", "groupid", "email", "passtime", "quota", "use_quota", "password"]
+
+    column_descriptions = {
+        'password': "Password(Left empty for forgot or newly create, It will send email to whom)",
+        'passtime': "The time for manually changing password(0 = never)"
+    }
+
     def on_model_change(self, form, model, is_created):
+        if is_created:
+            logger.warning("[Admin] Create for " + model.email)
+            sendUserMail(model, "register")
+            return
+        if not model.password:
+            logger.warning("[Admin] Reset Password and sent to " + model.email)
+            sendUserMail(model, "forgetpass")
+            return
         if not model.password.startswith("$6$"):
+            logger.warning("[Admin] Reset Password " + model.email)
             model.setPassword(model.password)
 
 

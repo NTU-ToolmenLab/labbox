@@ -48,16 +48,17 @@ def std_add_user():
     groupid = int(input('Group: (Interger)'))
     quota = int(input('Quota: '))
     email = input("Email: ")
-    return add_user(name, passwd, time.time(), groupid, quota, email)
+    return add_user(name, passwd, groupid, quota, email)
 
 
 @app.cli.command()
-def std_add_image():
-    from labboxmain.box_models import Image
-    user = input('Username ')
-    name = input('Imagename ')
-    description = input('description ')
-    Image.create(name, user, description)
+def add_user_by_email():
+    from labboxmain.models import add_user_by_email
+    name = input('Username ')
+    groupid = int(input('Group: (Interger)'))
+    quota = int(input('Quota: '))
+    email = input("Email: ")
+    return add_user_by_email(name, email, groupid, quota)
 
 
 @app.cli.command()

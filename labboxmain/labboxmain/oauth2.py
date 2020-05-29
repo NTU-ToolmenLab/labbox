@@ -206,7 +206,7 @@ def authorize():
     logger.debug('[oauth] auth ' + str(request.form))
     now_user = flask_login.current_user
     grant_user = authorization.validate_consent_request(end_user=now_user)
-    return authorization.create_authorization_response(grant_user=grant_user)
+    return authorization.create_authorization_response(grant_user=now_user)
 
 
 @bp.route('/token', methods=['POST'])

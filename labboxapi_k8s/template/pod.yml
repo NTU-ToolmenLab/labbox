@@ -62,10 +62,8 @@ spec:
     env:
     - name: node
       value: {{ node | default("any") }}
-    {% if gpu is not none %}
     - name: NVIDIA_VISIBLE_DEVICES
-      value: "{{ gpu }}"
-    {% endif %}
+      value: "{{ gpu | default('all') }}"
 
     resources:
       requests:

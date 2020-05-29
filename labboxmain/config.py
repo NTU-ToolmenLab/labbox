@@ -60,10 +60,10 @@ config = {
     # Link
     'links': [{
         'name': 'Monitor',
-        'link': '/monitor'
+        'link': '/monitor/'
         }, {
         'name': 'Drive',
-        'link': '/drive'
+        'link': '/drive/'
         }, {
         'name': 'Help',
         'link': '/help'
@@ -100,6 +100,16 @@ config = {
     # Backgroud method
     'celery_broker_url': 'redis://{}:6379'.format(os.environ.get("NAME_REDIS")),
     'celery_result_backend': 'redis://{}:6379'.format(os.environ.get("NAME_REDIS")),
+
+    # for email
+    'admin_email': "r08631020@ntu.edu.tw",
+    'email_host': "mail.ntu.edu.tw",
+    'email_port': 587,
+    'email_password': os.environ.get("EMAIL_PASSWORD"),
+    'email_title': {
+        'register': "Registration of ToolmenLab",
+        'forgetpass': "Reset Password for ToolmenLab"
+    },
 
     # GPU settings
     # Details see in box_queue.py

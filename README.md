@@ -75,6 +75,9 @@ Go to `your.domain/admin/`
 ### Add help.html
 You can add `help.html` in `labboxmain/labboxmain/templates/`
 
+### Change email
+You can add `*.j2` in `labboxmain/labboxmain/email_templates/`
+
 
 ### Add images and enviorment files for user
 It is recommand to use the docker image built in
