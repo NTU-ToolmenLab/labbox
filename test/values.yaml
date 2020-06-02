@@ -125,6 +125,30 @@ main:
       tag: rc
 
 
+email_sender:
+  enabled: true
+  host: "mail.ntu.edu.tw"
+  port: "587"
+
+  replicaCount: 1
+
+  # Docker file should built by `build_docker.sh`
+  image:
+    pullPolicy: Always
+    repository: harbor.default.svc.cluster.local/linnil1/labboxapi-docker
+    tag: latest
+
+  # User email and password
+  # kubectl create secret generic email-sender --from-literal=user='xx@ntu.edu.tw' --from-file=password=/dev/stdin
+  secret_name: email-sender
+
+  # Set to null if you don't want to modify the script
+  persistentVolumeClaim: nfs-labserver
+
+  # Mount the source of main
+  subpath: labbox/simple_email_sender
+
+
 imagePullSecrets: []
 podSecurityContext: {}
 securityContext: {}
