@@ -87,6 +87,11 @@ k8s:
   namespace: 'user1'
   user_label: "labbox-user1"
 
+  # Restrict user's instance network:
+  # * Disallow instance to query anything in 10.90.0.0/16
+  policy:
+    enabled: true
+
 
 main:
   # Main interface
