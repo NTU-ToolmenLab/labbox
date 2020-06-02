@@ -129,17 +129,16 @@ main:
       repository: redis
       tag: rc
 
+
 email_sender:
   enabled: true
   host: "mail.ntu.edu.tw"
   port: "587"
 
   replicaCount: 1
-
-  # Docker file should built by `build_docker.sh`
   image:
     pullPolicy: IfNotPresent
-    repository: linnil1/harbor.default.
+    repository: linnil1/labboxapi-docker
     tag: latest
 
   # User email and password

@@ -1,0 +1,16 @@
+Hello, {{ name }}
+
+You consume gpu resources for a long time.
+
+If you think that's correct, ignore this mail. Otherwise, try to kill it.
+
+Here are the details:
+{% for process in processes %}
+Process "{{ process.cmd }}",
+created at {{ process.created_time }} and consumed GPU {{ process.gpuid }} with memory {{ process.memory }}.
+It ran in {{ process.box_name }} on {{ process.node_name }} for {{ process.interval }}.
+{% endfor %}
+
+Sincerely,
+linnil1
+Toolmen Server Admin

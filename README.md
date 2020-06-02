@@ -5,6 +5,7 @@ An very easy interface for every user to control their instance on k8s.
 Some features are added into this project.
 * noVNC
 * sshpiper
+* simple_email_sender: A simple REST api to send email
 
 ## Architecture
 * Labboxapi_docker
@@ -20,6 +21,7 @@ Some features are added into this project.
     * noVNC query for permission from labboxmain.
     * Oauth server
     * Framework: Vue + flask
+    * The REST api to control docker on each node(DaemonSet).
 
 ## USAGE
 
@@ -117,3 +119,4 @@ xmlHttp.send("token=" + tokenname);
 ## TODO
 * [ ] Separte config file from source code
 * [ ] Separte help.html from source code
+* [ ] Separte mail_template/ from source code
