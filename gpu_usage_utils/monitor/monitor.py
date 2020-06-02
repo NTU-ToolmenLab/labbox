@@ -15,10 +15,21 @@ def getGPU():
                              stdout=subprocess.PIPE)
     ori_data = process.stdout.decode().split('\n')
 
-    header = ori_data[0][1:].split()
-    data = ori_data[2:]
+    header = []
+    data = []
+    for line in ori_data:
+        if not line:
+            continue
+        if "#YYYYMMDD" in line:
+            continue
+        if "#" in line:
+            header = line[1:].split()
+        else:
+            data.append(line)
+
     value_arr = [dict(zip(header, data_str.split())) for data_str in data]
     value_arr = list(filter(lambda a: a and a.get('fb') != '-', value_arr))
+    print(value_arr)
     return value_arr
 
 
@@ -66,6 +77,9 @@ def setMetrics():
         obj = {}
         # from gpu data
         for i in mapping:
+            print(m)
+            print(mapping)
+            print(mapping[i][1])
             obj[mapping[i][0]] = mapping[i][1](m[i])
         obj['read_time'] = time.strptime(m['Date'] + ' ' + m['Time'],
                                          "%Y%m%d %H:%M:%S")

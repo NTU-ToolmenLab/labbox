@@ -148,6 +148,45 @@ email_sender:
   # Mount the source of main
   subpath: labbox/simple_email_sender
 
+gpu:
+  notify:
+    enabled: true
+    image:
+      pullPolicy: Always
+      repository: harbor.default.svc.cluster.local/linnil1/gpu-notify
+      tag: latest
+
+    # Cannot be null
+    persistentVolumeClaim: nfs-labserver
+
+    # Mount the source of main
+    subpath: labbox/gpu_usage_utils/notify
+    data_subpath: labbox/data/db.sqlite
+
+    # schule
+    schedule: "0 8 */3 * *"
+
+    # monitor_url
+    prometheus_url: lab-monitor-prometheus-server.monitor
+    restart: Never
+
+  monitor:
+    enabled: true
+    image:
+      pullPolicy: Always
+      repository: harbor.default.svc.cluster.local/linnil1/gpu-monitor
+      tag: latest
+
+    # export port
+    port: 8000
+
+    # Cannot be null
+    persistentVolumeClaim: nfs-labserver
+
+    # Mount the source of main
+    subpath: labbox/gpu_usage_utils/monitor
+    data_subpath: labbox/data/db.sqlite
+
 
 imagePullSecrets: []
 podSecurityContext: {}

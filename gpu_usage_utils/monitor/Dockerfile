@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.1-base
+FROM nvidia/cuda:10.2-base
 RUN apt update -y && \
     apt install -y python3-pip && \
     rm -rf /var/lib/apt/lists/* && \

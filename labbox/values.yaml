@@ -151,6 +151,42 @@ email_sender:
   # Mount the source of main
   subpath: simple_email_sender
 
+gpu:
+  notify:
+    enabled: true
+    image:
+      pullPolicy: IfNotPresent
+      repository: linnil1/gpu-notify
+      tag: latest
+
+    # Cannot be null
+    persistentVolumeClaim: nfs-labserver
+
+    # Mount the source of main
+    subpath: gpu_usage_utils/notify
+    data_subpath: data/db.sqlite
+
+    # schule
+    schedule: "0 8 * * *"
+
+    # monitor_url
+    prometheus_url: lab-monitor-prometheus-server.monitor
+    restart: Never
+
+  monitor:
+    enabled: true
+    image:
+      pullPolicy: IfNotPresent
+      repository: linnil1/gpu-monitor
+      tag: latest
+
+    port: 8000
+    # Cannot be null
+    persistentVolumeClaim: nfs-labserver
+
+    # Mount the source of main
+    subpath: gpu_usage_utils/monitor
+    data_subpath: data/db.sqlite
 
 imagePullSecrets: []
 podSecurityContext: {}

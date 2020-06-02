@@ -1,0 +1,73 @@
+{{- if .Values.gpu.monitor.enabled -}}
+{{- $name := include "labbox.gpu.monitor" . -}}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "labbox.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "labbox.selectorLabels" . | nindent 6 }}
+      name: {{ $name }}
+  template:
+    metadata:
+      labels:
+        {{- include "labbox.selectorLabels" . | nindent 8 }}
+        name: {{ $name }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      hostPID: true
+      containers:
+        - name: {{ $name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.gpu.monitor.image.repository }}:{{ .Values.gpu.monitor.image.tag }}"
+          imagePullPolicy: {{ .Values.gpu.monitor.image.pullPolicy }}
+          ports:
+          - containerPort: {{ .Values.gpu.monitor.port }}
+            protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.gpu.monitor.port }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.gpu.monitor.port }}
+          volumeMounts:
+          {{- if .Values.gpu.monitor.persistentVolumeClaim }}
+          {{- with .Values.gpu.monitor.subpath }}
+          - name: volume
+            mountPath: /app
+            subPath: {{ . }}
+            readOnly: true
+          {{- end }}
+          {{- with .Values.gpu.monitor.data_subpath }}
+          - name: volume
+            mountPath: /data/db.sqlite
+            subPath: {{ . }}
+            readOnly: true
+          {{- end }}
+          {{- end }}
+      volumes:
+      {{- with .Values.gpu.monitor.persistentVolumeClaim }}
+      - name: volume
+        persistentVolumeClaim:
+          claimName: {{ . }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

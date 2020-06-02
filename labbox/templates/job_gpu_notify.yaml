@@ -1,0 +1,67 @@
+{{- if .Values.gpu.notify.enabled -}}
+{{- if .Values.gpu.monitor.enabled -}}
+{{- $name := include "labbox.gpu.notify" . -}}
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: gpu-notify
+  labels:
+    {{- include "labbox.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.gpu.notify.schedule }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          dnsPolicy: ClusterFirst
+          restartPolicy: {{ .Values.gpu.notify.restart }}
+          containers:
+          - name: gpu-notify
+            image: "{{ .Values.gpu.notify.image.repository }}:{{ .Values.gpu.notify.image.tag }}"
+            imagePullPolicy: {{ .Values.gpu.notify.image.pullPolicy }}
+            volumeMounts:
+            {{- if .Values.gpu.notify.persistentVolumeClaim }}
+            {{- with .Values.gpu.notify.subpath }}
+            - name: volume
+              mountPath: /app
+              subPath: {{ . }}
+              readOnly: true
+            {{- end }}
+            {{- with .Values.gpu.notify.data_subpath }}
+            - name: volume
+              mountPath: /data/db.sqlite
+              subPath: {{ . }}
+              readOnly: true
+            {{- end }}
+            {{- end }}
+            env:
+            - name: NAME_EMAIL_SENDER
+              value: {{ include "labbox.email_sender" . }}
+            - name: NAME_PROMETHEUS
+              value: {{ .Values.gpu.notify.prometheus_url }}
+          volumes:
+          {{- with .Values.gpu.notify.persistentVolumeClaim }}
+          - name: volume
+            persistentVolumeClaim:
+              claimName: {{ . }}
+          {{- end }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}
+{{- end }}

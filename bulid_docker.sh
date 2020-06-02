@@ -10,6 +10,12 @@ docker build labboxapi_docker -t linnil1/labboxapi-docker
 echo "BUILD labboxapi-k8s"
 docker build labboxapi_k8s -t linnil1/labboxapi-k8s
 
+echo "BUILD gpu notifier"
+docker build gpu_usage_utils/notify linnil1/gpu-notify
+
+echo "BUILD gpu monitoring"
+docker build gpu_usage_utils/monitor linnil1/gpu-monitor
+
 # VNC
 echo "BUILD VNC"
 cd novnc
