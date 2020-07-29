@@ -23,6 +23,7 @@ if __name__ == '__main__':
 
 @app.cli.command()
 def initdb():
+    """ Init the database """
     from labboxmain.models import db, add_user
     from labboxmain.box_models import db as boxdb
     logger.warning('[Database] Recreate DataBase')
@@ -38,6 +39,7 @@ def initdb():
 
 @app.cli.command()
 def std_add_user():
+    """ Add user using std input """
     from labboxmain.models import add_user
     from getpass import getpass
     import time
@@ -52,7 +54,32 @@ def std_add_user():
 
 
 @app.cli.command()
+def add_user_batch():
+    """ Add user using std input without password """
+    from labboxmain.models import add_user_by_email
+    users = []
+    for user in "linnil1 linnil2".split():
+        users.append({'name': user,
+                 'email': f"{user}@ntu.edu.tw",
+                 'groupid': 1,
+                 'quota': 4})
+        print(users[-1])
+
+    for user in users:
+        add_user_by_email(**user)
+
+
+@app.cli.command()
+@click.option('--server', default='all', help='Server hostname. `--server=all` for all nodes')
+def stop(server):
+    """ Stop all instances """
+    from labboxmain.box import boxesStop
+    boxesStop(node=server)
+
+
+@app.cli.command()
 def add_user_by_email():
+    """ Add user using std input without password """
     from labboxmain.models import add_user_by_email
     name = input('Username ')
     groupid = int(input('Group: (Interger)'))
@@ -62,10 +89,41 @@ def add_user_by_email():
 
 
 @app.cli.command()
-@click.option('--server', default='all', help='Server hostname. `--server=all` for all nodes')
-def stop(server):
-    from labboxmain.box import boxesStop
-    boxesStop(node=server)
+@click.option("--name", default=None, help="The target user for nextcloud stroage setting")
+def nextcloud_share_storage(name=None):
+    """ Create nextcloud share_storage setting """
+    from labboxmain.models import User
+    import json
+    if not name:
+        name = input("Enter the username")
+    path = "/external_data/"
+    names = [name]
+    datas = []
+    for name in names:
+        user = User.query.filter_by(name=name).first()
+        if not user:
+            print("No such user")
+            exit()
+
+        datas.append({
+            # "mount_id": 56 + i,
+            "mount_point": f"/share_{name}",
+            "storage": "\\OC\\Files\\Storage\\Local",
+            "configuration": {
+                "datadir": f"{path}" + user.getGroupData()['homepath']
+            },
+            "authentication_type": "null::null",
+            "options": {
+                "encrypt": True,
+                "previews": True,
+                "enable_sharing": True,
+                "filesystem_check_changes": 1,
+                "encoding_compatibility": False,
+                "readonly": False,
+            },
+            "applicable_users": [name],
+        })
+    json.dump(datas, open("/data/nextcloud_storage_setting.json", "w"))
 
 
 @app.cli.command()

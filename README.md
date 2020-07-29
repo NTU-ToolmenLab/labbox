@@ -1,10 +1,11 @@
 # LABBOX
 
-An very easy interface for every user to control their instance on k8s.
+An very easy interface for every user to create and run job in their instance on k8s.
 
 Some features are added into this project.
-* noVNC
-* sshpiper
+* labboxmain: A web interface to control instance
+* noVNC: Allow user to access their instance by vnc
+* sshpiper: Allow user to access their instance by ssh
 * simple_email_sender: A simple REST api to send email
 
 ## Architecture
@@ -60,6 +61,18 @@ Note: groupid=0 is admin
 docker run -it --rm -v $PWD/data:/app/ linnil1/labboxmain flask std-add-user
 ```
 
+### Add user in batch
+You can change the code in `labboxmain/labboxmain/__init__.py`.
+
+Then run `kubectl exec -it $(kubectl get pods -l name=labbox-main -o name) flask add-user-batch`
+
+### Add user's storage in Nextcloud
+```
+kubectl exec -it $(kubectl get pods -l name=labbox-main -o name) -- flask nextcloud-share-storage --name=linnil1
+cp data/nextcloud_storage_setting.json ../Nextcloud/nextcloud/tmp.json
+kubectl exec -it -n user $(kubectl get pods -l name=nextcloud-fpm -o name -n user) -- sudo -u www-data php occ files_external:import tmp.json
+```
+
 ### Add node
 Add labboxgroup=0-1-2 for allowing group 0,1,2 access this node.
 ```
@@ -78,7 +91,7 @@ Go to `your.domain/admin/`
 You can add `help.html` in `labboxmain/labboxmain/templates/`
 
 ### Change email
-You can add `*.j2` in `labboxmain/labboxmain/email_templates/`
+You can add and change `*.j2` in `labboxmain/labboxmain/email_templates/`
 
 
 ### Add images and enviorment files for user
@@ -90,7 +103,7 @@ and put `all.tar` under the root of `nfs-homenas`(PV)
 
 ### If any emergency happened
 ```
-kubectl exec -it labboxmain-6599f4b74c-z5jcx flask stop --server=all
+kubectl exec -it $(kubectl get pods -l name=labbox-main -o name) -- flask stop --server=all
 ```
 
 ### VNC

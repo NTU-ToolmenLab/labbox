@@ -99,7 +99,7 @@ def sendMail(data):
         app.logger.error("[Email] send Error" + e)
         abort(400, "Send email error")
 
-    app.logger.debug("[Email] Send successed." + data['email'])
+    app.logger.debug("[Email] Send successed." + data['address'])
     return Ok()
 
 

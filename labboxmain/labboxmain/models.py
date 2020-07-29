@@ -91,7 +91,7 @@ def sendUserMail(user, template):
     return sendMail(user.email, template, name=user.name, password=password)
 
 
-def add_user_by_email(name, email, groupid=0, quota=0):
+def add_user_by_email(name, email="", groupid=0, quota=0):
     """ Add user by this function, it will notify the user by email."""
     name = name.strip()
     assert(name)
@@ -102,8 +102,9 @@ def add_user_by_email(name, email, groupid=0, quota=0):
              disable=False,
              groupid=groupid,
              quota=quota,
-             email="")
-    sendUserMail(u, "register")
+             email=email)
+    if email:
+        sendUserMail(u, "register")
     db.session.add(u)
     db.session.commit()
     return name
