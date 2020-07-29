@@ -10,6 +10,7 @@ from .send_email import sendMail
 logger = logging.getLogger('labboxmain')
 db = SQLAlchemy()
 login_manager = flask_login.LoginManager()
+from config import create_rule
 
 
 class User(db.Model, flask_login.UserMixin):
@@ -29,6 +30,9 @@ class User(db.Model, flask_login.UserMixin):
 
     def checkPassword(self, password):
         return passlib.hash.sha512_crypt.verify(password, self.password)
+
+    def getGroupData(self):
+        return create_rule(self)
 
     def setPassword(self, password, record=True):
         self.password = passlib.hash.sha512_crypt.hash(password)

@@ -117,8 +117,7 @@ authorization = AuthorizationServer(
 require_oauth = ResourceProtector()
 
 
-def config_oauth(app, dn='', url_prefix="/oauth"):
-    bp.domain_name = dn
+def config_oauth(app, url_prefix="/oauth"):
     authorization.init_app(app)
 
     # support all grants
@@ -230,4 +229,5 @@ def profile():
         'id': name,
         'username': name,
         'name': name,
-        'email': name + '@' + bp.domain_name})
+        'groups': [user.getGroupData()['groupname']],
+        'email': user.email})

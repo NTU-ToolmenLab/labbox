@@ -25,9 +25,6 @@ def record_params(setup_state):
         bp.apiurl = config.get('labboxapi-docker')
         bp.usek8s = False
 
-    # group setting
-    bp.create_rule = config.get('create_rule')
-
     # other component
     bp.vncpw = config.get('vnc_password')
     bp.sshpiper = config.get('sshpiper')
@@ -221,7 +218,7 @@ class Box(db.Model):
             'image': image,
             'pull': pull,
             'homepath': user.name}
-        now_dict.update(bp.create_rule(user))
+        now_dict.update(user.getGroupData())
         if not bp.repo_url:
             now_dict['pull'] = False
 

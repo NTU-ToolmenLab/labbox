@@ -113,7 +113,7 @@ class BoxQueue(db.Model):
             'command': self.command,
             'pull': True,
             'homepath': user.name}
-        now_dict.update(bp.create_rule(user))
+        now_dict.update(user.getGroupData())
         if not bp.repo_url:
             now_dict['pull'] = False
         logger.debug(f"[Queue] Run {self} {now_dict}")

@@ -5,22 +5,19 @@ import os
 # groupid=0 -> admin
 # groupid=1 -> Our users
 # groupid=2 -> Other users
-# groupid=3 -> Our guest
 def create_rule(user):
     create_param = {}
     if user.groupid <= 1:
         create_param.update({
+            'groupname': 'toolmen',
+            'homepath': user.name,
             'homepvc': "nfs-homenas",
             'naspvc': "nfs-labnas",
-        }) if user.groupid == 2:
-        create_param.update({
-            'homepath': 'sfc/' + user.name,
-            'homepvc': "nfs-homenas",
-            'naspvc': "",
         })
-    elif user.groupid == 3:
+    elif user.groupid == 2:
         create_param.update({
-            'homepath': 'summer/' + user.name,
+            'groupname': 'test',
+            'homepath': 'others/' + user.name,
             'homepvc': "nfs-homenas",
             'naspvc': "",
         })

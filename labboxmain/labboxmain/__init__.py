@@ -12,7 +12,7 @@ from .oauth2 import config_oauth
 app.register_blueprint(boxbp, url_prefix='/box')
 boxdb.init_app(app)
 admin.init_app(app)
-config_oauth(app, config.get('domain_name'), url_prefix="/oauth")
+config_oauth(app, url_prefix="/oauth")
 
 logger = logging.getLogger('labboxmain')
 logger.info('[All] Start')
