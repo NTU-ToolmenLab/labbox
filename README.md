@@ -7,6 +7,8 @@ Some features are added into this project.
 * noVNC: Allow user to access their instance by vnc
 * sshpiper: Allow user to access their instance by ssh
 * simple_email_sender: A simple REST api to send email
+* gpu_monitor: Monitor the gpus usage by user
+* gpu_notify: Send email to user if gpu is occupied
 
 ## Architecture
 * Labboxapi_docker
@@ -22,7 +24,6 @@ Some features are added into this project.
     * noVNC query for permission from labboxmain.
     * Oauth server
     * Framework: Vue + flask
-    * The REST api to control docker on each node(DaemonSet).
 
 ## USAGE
 

@@ -6,6 +6,7 @@ import requests
 logger = logging.getLogger('labboxmain')
 email_sender = config['email_sender']
 email_title = config['email_title']
+domain_url = config['domain_url']
 
 
 def sendMail(address, template, **kwargs):
@@ -21,6 +22,7 @@ def sendMail(address, template, **kwargs):
             template = email_title[template]
             text = Template(open("labboxmain/mail_templates/" + template + ".j2", 'r').read()).render(kwargs)
         resp = requests.post(email_sender, json={
+                'domain_url': domain_url,
                 'title': template,
                 'text': text,
                 'address': address})

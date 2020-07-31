@@ -4,7 +4,7 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: gpu-notify
+  name: {{ $name }}
   labels:
     {{- include "labbox.labels" . | nindent 4 }}
 spec:
@@ -22,7 +22,7 @@ spec:
           dnsPolicy: ClusterFirst
           restartPolicy: {{ .Values.gpu.notify.restart }}
           containers:
-          - name: gpu-notify
+          - name: {{ $name }}
             image: "{{ .Values.gpu.notify.image.repository }}:{{ .Values.gpu.notify.image.tag }}"
             imagePullPolicy: {{ .Values.gpu.notify.image.pullPolicy }}
             volumeMounts:

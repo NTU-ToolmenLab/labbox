@@ -321,7 +321,7 @@ def getAvailableGPUs():
     """
     Find the available gpu by filtering the gpu status with decision function.
 
-    The decision function is define in "gpu_decision_func", also
+    The decision function is define in "gpu_is_free", also
     it will filter gpus if it's assigned in some specific time interval
     (gpu_exe_interval).
 
@@ -352,9 +352,11 @@ def boxRun(bid, node, gpu):
 @celery.task()
 def scheduleGPU():
     """Checking task and gpu status"""
-    for _ in range(60):
+    avail_gpus = [('', 0)] * 10
+    for t in range(60):
         if bp.gpu_url:
-            avail_gpus = getAvailableGPUs()
+            if t % 5 == 0:
+                avail_gpus = getAvailableGPUs()
         else:
             avail_gpus = [('', 0)] * 10
 

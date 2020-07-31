@@ -51,7 +51,7 @@ def record_params(setup_state):
     bp.gpu_query_metrics = config.get('gpu_query_metrics')
     bp.gpu_query_interval = config.get('gpu_query_interval')
     bp.gpu_exe_interval = config.get('gpu_exe_interval')
-    bp.gpu_decision_func = config.get('gpu_decision_func')
+    bp.gpu_decision_func = config.get('gpu_is_free')
 
     # setup redis
     redis_url = config.get('celery_broker_url')

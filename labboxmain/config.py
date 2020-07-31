@@ -23,8 +23,7 @@ def create_rule(user):
         })
     return create_param
 
-
-def gpu_decision_func(value):
+def gpu_is_free(value):
     """
     The decision function of finding server with available gpu.
     Parameters
@@ -108,11 +107,11 @@ config = {
     # GPU settings
     # Details see in box_queue.py
     # set gpu_monitor_url = null to disable monitor gpu
-    'gpu_monitor_url': '',
-    # 'gpu_monitor_url': 'http://lab-monitor-prometheus-server.monitor.svc.cluster.local/api/v1/',
-    'gpu_query_metrics': ['nvidia_gpu_duty_cycle', 'nvidia_gpu_memory_used_bytes / nvidia_gpu_memory_total_bytes'],
-    'gpu_decision_func': gpu_decision_func,
+    # 'gpu_monitor_url': '',
     'queue_quota': 6,
+    'gpu_monitor_url': 'http://lab-monitor-prometheus-server.monitor.svc.cluster.local/api/v1/',
+    'gpu_query_metrics': ['nvidia_gpu_duty_cycle', 'nvidia_gpu_memory_used_bytes / nvidia_gpu_memory_total_bytes'],
+    'gpu_is_free': gpu_is_free,
     'gpu_query_interval': 60,
     'gpu_exe_interval': 300,
 }

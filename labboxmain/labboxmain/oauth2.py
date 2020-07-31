@@ -225,9 +225,12 @@ def profile():
     user = current_token.user
     name = user.name
     logger.debug('[oauth] user ' + name)
+    groups = [user.getGroupData()['groupname']]
+    if user.groupid == 0:
+        groups.append("admin")
     return jsonify({
         'id': name,
         'username': name,
         'name': name,
-        'groups': [user.getGroupData()['groupname']],
+        'groups': groups,
         'email': user.email})

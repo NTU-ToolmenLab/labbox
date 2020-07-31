@@ -52,8 +52,10 @@ def getCreateParams():
 
 def getImages():
     """Available images"""
+    user = flask_login.current_user
     images = Image.query.filter_by(user="*").order_by(Image.id.desc()).all()
-    images = [{'name': i.name, 'description': i.description} for i in images]
+    images_user = Image.query.filter_by(user=user.name).order_by(Image.id.desc()).all()
+    images = [{'name': i.name, 'description': i.description} for i in [*images, *images_user]]
 
     # TODO
     # user = flask_login.current_user
@@ -184,6 +186,8 @@ def create():
     parent = None
     if Image.query.filter_by(user="*", name=image).first():
         image = bp.repo_default + data.get('image')
+    elif Image.query.filter_by(user=user.name, name=image).first():
+        image = bp.repo_default + data.get('image')
     elif Box.query.filter_by(user=user.name, box_name=image).first():
         parent = Box.query.filter_by(user=user.name, box_name=image).first()
         image = parent.getImageName()
@@ -242,7 +246,8 @@ def boxChangeNode(bid, node):
     image_base = box.image_base
 
     # commit and push
-    box.commit()
+    if str(box.getStatus()['status'].lower()) == "running":
+        box.commit()
     imagePush(box)
 
     # delete and create
