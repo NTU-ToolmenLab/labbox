@@ -106,6 +106,10 @@ and put `all.tar` under the root of `nfs-homenas`(PV)
 ```
 kubectl exec -it $(kubectl get pods -l name=labbox-main -o name) -- flask stop --server=all
 ```
+or using web interface
+
+`https://your.domain:443/box/stop/`
+
 
 ### VNC
 If you want to do more fancy things, like auto login for vnc password.

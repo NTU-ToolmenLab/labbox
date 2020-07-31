@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}
+stop
+{% endblock %}
+
+{% block body %}
+{% include 'nav.html' %}
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-7" id="app">
+        <li><a href="{{ url_for('labboxmain.box_models.nodeStop') + '/' + 'all'}}">Stop all</a>
+        <ul>
+          {% for node in nodes %}
+          <li><a href="{{ url_for('labboxmain.box_models.nodeStop') + '/' + node}}">stop {{ node }}</a>
+          {% endfor %}
+        </ul>
+
+      </div>
+    </div>
+  </div>
+{% endblock %}

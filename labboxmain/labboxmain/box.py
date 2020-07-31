@@ -94,6 +94,29 @@ def vncToken():
     return bp.vncpw
 
 
+@bp.route("/stop", methods=["GET"])
+@bp.route("/stop/<node>", methods=["GET"])
+@flask_login.login_required
+def nodeStop(node=""):
+    """ The interface that admin stop all the instance on specific node """
+    # Only allow admin
+    user = flask_login.current_user
+    if user.groupid != 0:
+        abort(400, "Admin only")
+
+    # list available node for stop
+    node_names = getNodes()
+    if not node:
+        return render_template("box_stop_node.html",
+                               nodes=node_names)
+
+    # Stop it
+    if node not in node_names and node != 'all':
+        abort(400, "Cannot find the node")
+    boxesStop(node=node)
+    return redirect(url_for("labboxmain.box_models.List"))
+
+
 @bp.route("/api", methods=["POST"])
 @flask_login.login_required
 def api():
@@ -469,9 +492,12 @@ def boxesStop(name="", node=""):
 
     for box in boxes:
         box = Box.query.filter_by(id=box).first()
-        if box.getStatus()['status'].lower() == "running":
-            logger.warning("[Stop] pod " + box.box_name)
-            boxStop(box.id)
+        try:
+            if box.getStatus()['status'].lower() == "running":
+                logger.warning("[Stop] pod " + box.box_name)
+                boxStop(box.id)
+        except:
+            print("Error to stop " + box.box_name)
 
 
 # Routine
